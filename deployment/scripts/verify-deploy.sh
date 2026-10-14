@@ -24,7 +24,15 @@ for raw in "${TARGETS[@]}"; do
 done
 
 if [[ "$check_api_health" == "1" ]]; then
-  http_code="$(curl -s -o /dev/null -w '%{http_code}' "$API_HEALTH_URL" || echo "000")"
+  http_code="000"
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
+    http_code="$(curl -s -o /dev/null -w '%{http_code}' "$API_HEALTH_URL" || echo "000")"
+    if [[ "$http_code" == "200" ]]; then
+      break
+    fi
+    log "API health attempt $attempt: HTTP $http_code (waiting for PM2 startup…)"
+    sleep 3
+  done
   if [[ "$http_code" != "200" ]]; then
     fail "API health returned HTTP $http_code (expected 200). Build marker exists but API is not healthy."
   fi
