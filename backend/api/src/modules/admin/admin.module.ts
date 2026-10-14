@@ -11,10 +11,12 @@ import { AdminErpController } from './admin-erp.controller.js';
 import { AdminPlotSalesController } from './admin-plot-sales.controller.js';
 import { AdminResourcesController } from './admin-resources.controller.js';
 import { GoldApiAdminController } from '../goldapi/goldapi-admin.controller.js';
+import { AdminMailController } from './admin-mail.controller.js';
 
 @Module({
   imports: [AuthModule],
   controllers: [
+    AdminMailController,
     GoldApiAdminController,
     AdminController,
     AdminResourcesController,

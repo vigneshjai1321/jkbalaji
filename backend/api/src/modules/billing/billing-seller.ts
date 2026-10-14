@@ -33,7 +33,7 @@ const ENV_FALLBACK: SellerProfile = {
   legalName: process.env.BILLING_LEGAL_NAME?.trim() || 'SRI BALAJI THANGAMALIGAI',
   address: process.env.BILLING_ADDRESS?.trim() || DEFAULT_ADDRESS,
   gstin: process.env.COMPANY_GSTIN?.trim() || '33AAHCJ1786C1ZQ',
-  phone: process.env.COMPANY_PHONE?.trim() ?? '',
+  phone: process.env.COMPANY_PHONE?.trim() || '+91 99435 41435',
   email: process.env.BILLING_EMAIL?.trim() || BILLING_CONTACT_DEFAULT,
   stateCode: process.env.BILLING_STATE_CODE?.trim() ?? '33',
   paymentTermsDefault: process.env.BILLING_PAYMENT_TERMS?.trim() ?? 'Payment due within 7 days of invoice date.',

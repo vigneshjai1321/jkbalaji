@@ -8,26 +8,34 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@jkbalaji.in';
+  const adminEmail = (process.env.SEED_ADMIN_EMAIL ?? 'admin@jkbalaji.com').trim().toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe@JK2026!';
+  const forcePassword = process.env.SEED_FORCE_PASSWORD_RESET === '1';
 
-  const passwordHash = await argon2.hash(adminPassword);
-
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {
-      passwordHash,
-      role: UserRole.SUPER_ADMIN,
-      isActive: true,
-      name: 'JK Balaji Admin',
-    },
-    create: {
-      email: adminEmail,
-      passwordHash,
-      name: 'JK Balaji Admin',
-      role: UserRole.SUPER_ADMIN,
-    },
-  });
+  const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (existing && !forcePassword) {
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: { role: UserRole.SUPER_ADMIN, isActive: true, name: 'JK Balaji Admin' },
+    });
+  } else {
+    const passwordHash = await argon2.hash(adminPassword);
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        passwordHash,
+        role: UserRole.SUPER_ADMIN,
+        isActive: true,
+        name: 'JK Balaji Admin',
+      },
+      create: {
+        email: adminEmail,
+        passwordHash,
+        name: 'JK Balaji Admin',
+        role: UserRole.SUPER_ADMIN,
+      },
+    });
+  }
 
   await prisma.jewelleryProduct.createMany({
     data: [

@@ -2,12 +2,19 @@ import { adminFetch } from '@/lib/admin-api';
 import type { SellerProfile } from '@/lib/billing-types';
 import type { BillingCustomer } from '@/components/billing/CustomerPicker';
 import {
+  createPreviewSessionId,
+  previewDraftUrl,
+  writeBillingPreviewPending,
   writeBillingPreviewSession,
   type BillingPreviewSession,
   type PreviewInvoiceInput,
 } from '@/lib/billing-preview-session';
 
 type PreviewResp = BillingPreviewSession['preview'];
+
+export type OpenPreviewResult =
+  | { ok: true; previewId: string }
+  | { ok: false; blocked: true; previewUrl: string; previewId: string };
 
 export async function openInvoicePreviewInNewTab(opts: {
   previewInput: PreviewInvoiceInput;
@@ -21,7 +28,16 @@ export async function openInvoicePreviewInNewTab(opts: {
   sample?: boolean;
   returnPath: string;
   invoiceNo?: string;
-}) {
+}): Promise<OpenPreviewResult> {
+  const previewId = createPreviewSessionId();
+  const previewUrl = previewDraftUrl(previewId);
+
+  writeBillingPreviewPending(previewId);
+  const tab = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+  if (!tab) {
+    return { ok: false, blocked: true, previewUrl, previewId };
+  }
+
   const preview = await adminFetch<PreviewResp>('/billing/invoices/preview', {
     method: 'POST',
     body: JSON.stringify({
@@ -49,10 +65,6 @@ export async function openInvoicePreviewInNewTab(opts: {
     preview,
   };
 
-  const previewId = writeBillingPreviewSession(session);
-  const url = `/billing/invoices/preview/draft?id=${encodeURIComponent(previewId)}`;
-  const tab = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!tab) {
-    throw new Error('Pop-up blocked. Allow pop-ups for this admin site, then try Preview invoice again.');
-  }
+  writeBillingPreviewSession(session, previewId);
+  return { ok: true, previewId };
 }

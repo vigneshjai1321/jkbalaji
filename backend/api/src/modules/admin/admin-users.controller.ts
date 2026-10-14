@@ -45,7 +45,7 @@ export class AdminUsersController {
     const passwordHash = await argon2.hash(body.password);
     return this.prisma.user.create({
       data: {
-        email: body.email,
+        email: body.email.trim().toLowerCase(),
         passwordHash,
         name: body.name,
         role: body.role,

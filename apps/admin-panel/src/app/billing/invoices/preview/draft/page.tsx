@@ -6,28 +6,61 @@ import { useEffect, useState } from 'react';
 import { AdminBtnSecondary } from '@/components/admin/AdminForm';
 import { InvoicePrintShell } from '@/components/billing/InvoicePrintShell';
 import { adminApiBase } from '@/lib/admin-api';
-import { readBillingPreviewSession, type BillingPreviewSession } from '@/lib/billing-preview-session';
+import {
+  readBillingPreviewSession,
+  waitForBillingPreviewSession,
+  type BillingPreviewSession,
+} from '@/lib/billing-preview-session';
 
 export default function DraftInvoicePreviewPage() {
   const searchParams = useSearchParams();
   const previewId = searchParams.get('id');
   const [session, setSession] = useState<BillingPreviewSession | null>(null);
   const [loadError, setLoadError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const data = readBillingPreviewSession(previewId);
-    if (!data) {
-      setLoadError(
-        previewId
-          ? 'Preview data expired or was cleared. Return to the form and click Preview invoice again.'
-          : 'No preview session found. Open preview from the invoice form (use Preview invoice, not a bookmark).',
-      );
-      setSession(null);
-      return;
+    let cancelled = false;
+    async function load() {
+      if (!previewId) {
+        setLoadError('No preview session found. Open preview from Create Invoice (Preview Invoice button).');
+        setLoading(false);
+        return;
+      }
+      const immediate = readBillingPreviewSession(previewId);
+      if (immediate) {
+        if (!cancelled) {
+          setSession(immediate);
+          setLoading(false);
+        }
+        return;
+      }
+      const data = await waitForBillingPreviewSession(previewId);
+      if (cancelled) return;
+      if (!data) {
+        setLoadError(
+          'Preview data is not ready yet, or it expired. Return to the form and click Preview Invoice again.',
+        );
+        setSession(null);
+      } else {
+        setSession(data);
+        setLoadError('');
+      }
+      setLoading(false);
     }
-    setSession(data);
-    setLoadError('');
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [previewId]);
+
+  if (loading) {
+    return (
+      <div className="billing-print-root min-h-screen bg-slate-200/70 p-8 max-w-lg mx-auto text-sm text-slate-700" role="status">
+        <p>Loading invoice preview…</p>
+      </div>
+    );
+  }
 
   if (loadError) {
     return (
@@ -40,14 +73,11 @@ export default function DraftInvoicePreviewPage() {
     );
   }
 
-  if (!session) {
-    return <p className="p-8 text-slate-600">Loading preview…</p>;
-  }
+  if (!session) return null;
 
   const p = session.preview;
 
   async function downloadPdf() {
-    if (!session) return;
     const token = localStorage.getItem('jk_token');
     const res = await fetch(`${adminApiBase()}/admin/billing/invoices/preview/pdf`, {
       method: 'POST',
@@ -55,7 +85,7 @@ export default function DraftInvoicePreviewPage() {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(session.previewPayload),
+      body: JSON.stringify(session!.previewPayload),
     });
     if (!res.ok) {
       alert('PDF download failed. Check you are still signed in.');
@@ -84,9 +114,11 @@ export default function DraftInvoicePreviewPage() {
       toolbar={
         <>
           <Link href={session.returnPath}>
-            <AdminBtnSecondary type="button">Back to invoice</AdminBtnSecondary>
+            <AdminBtnSecondary type="button">Back to Create Invoice</AdminBtnSecondary>
           </Link>
-          <AdminBtnSecondary type="button" onClick={() => window.close()}>Close preview</AdminBtnSecondary>
+          <AdminBtnSecondary type="button" onClick={() => window.close()}>
+            Close preview
+          </AdminBtnSecondary>
         </>
       }
       seller={session.seller}

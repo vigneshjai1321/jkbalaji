@@ -3,6 +3,7 @@
 import type { SellerProfile } from '@/lib/billing-types';
 import { amountInWordsInr } from '@/lib/amount-in-words';
 import { gstinFormatHint } from '@/lib/gstin-format';
+import type { InvoiceSheetLayout } from '@/lib/invoice-sheet-layout';
 
 type Line = {
   description: string;
@@ -36,6 +37,7 @@ export type InvoiceDocumentProps = {
   amountPaidInr?: string | number;
   paymentTerms?: string | null;
   notes?: string | null;
+  sheetLayout?: InvoiceSheetLayout;
 };
 
 function n(v: string | number | undefined | null) {
@@ -82,9 +84,15 @@ export function InvoiceDocument(props: InvoiceDocumentProps) {
   const balance = Math.max(0, n(props.totalInr) - n(props.amountPaidInr));
   const docTitle = gst ? 'TAX INVOICE' : 'INVOICE';
   const showStatus = !['PREVIEW', 'SAMPLE'].includes(props.status);
+  const sheetLayout = props.sheetLayout ?? 'compact';
+  const sheetClass = sheetLayout === 'compact' ? 'invoice-a4-sheet invoice-a4-sheet--compact' : 'invoice-a4-sheet invoice-a4-sheet--full';
 
   return (
-    <article className="invoice-a4 mx-auto bg-white text-slate-900 shadow-lg print:shadow-none">
+    <article
+      className={`${sheetClass} invoice-a4 mx-auto bg-white text-slate-900 shadow-lg print:shadow-none`}
+      aria-label="Tax invoice document"
+    >
+      <div className="invoice-a4-inner">
       <SellerHeader seller={props.seller} gst={gst} />
 
       <div className="flex flex-wrap justify-between gap-3 border-b border-slate-200 pb-2 mb-3 text-[11px]">
@@ -207,6 +215,7 @@ export function InvoiceDocument(props: InvoiceDocumentProps) {
           <p className="border-t border-slate-400 w-44 mt-8 pt-1 text-slate-800">{props.seller.tradeName || props.seller.legalName}</p>
         </div>
       </footer>
+      </div>
     </article>
   );
 }

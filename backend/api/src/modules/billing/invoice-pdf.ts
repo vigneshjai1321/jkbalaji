@@ -59,9 +59,23 @@ export function renderInvoicePdf(inv: Inv, seller: SellerProfile): Promise<Buffe
 
     const left = 40;
     const right = doc.page.width - 40;
+    const top = 36;
+    const bottom = doc.page.height - 36;
     const width = right - left;
+    const frameHeight = bottom - top;
     const gst = inv.gstApplied !== false;
     const docTitle = gst ? 'TAX INVOICE' : 'INVOICE';
+    const compact = inv.lines.length <= 8 && (!inv.notes || inv.notes.length <= 140);
+
+    doc.rect(left, top, width, frameHeight).strokeColor('#475569').lineWidth(0.75).stroke();
+    if (compact) {
+      doc
+        .moveTo(left, top + frameHeight / 2)
+        .lineTo(right, top + frameHeight / 2)
+        .strokeColor('#e2e8f0')
+        .lineWidth(0.5)
+        .stroke();
+    }
 
     let y = drawCenteredHeader(doc, seller, gst, left, width);
 
