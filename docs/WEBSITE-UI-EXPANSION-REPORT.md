@@ -1,106 +1,116 @@
-# Website UI expansion — final status (cleanup verification)
+# Website UI expansion — final status
 
 **Last updated:** 2026-10-14  
-**GitHub `main`:** **`9fdd050`** (HTTPS; `git push origin main` + `git ls-remote` verified). Feature commit **`22f28bb`** (rules + scheme CTA).  
-**Latest deploy:** `.\deploy.ps1 -BuildTargets "jew" -SkipDbMigrate` — **PASS** (CTA label live on `/gold-schemes`)
+**Latest commit:** `ff487a9` — compact inner pages, supporting sections, two-column footers  
+**GitHub `main`:** verified via HTTPS push + `git ls-remote origin refs/heads/main`
 
 ---
 
-## 1. Git backup rules (HTTPS)
+## 1. Inner-page improvements (this release)
 
-| Item | Status |
-|------|--------|
-| `.cursor/rules/20-deploy-safety.mdc` | **PASS** — HTTPS push; no SSH troubleshooting for backup |
-| `.cursor/rules/50-git-backup-only.mdc` | **PASS** — aligned with HTTPS |
-| `docs/GIT-BACKUP.md` | **PASS** — HTTPS remote, verify with `git ls-remote` |
-| GitHub Actions / push deploy | **Not configured** (by design) |
-| Production deploy | Unchanged: `deployment/deploy.ps1` → VPS only |
+### Shared patterns
 
-**Backup command:** `git push origin main` with `origin` = `https://github.com/vigneshjai1321/jkbalaji.git` and existing credential manager / GitHub Desktop.
+| Site | Components |
+|------|------------|
+| Real estate | `RePageHeader`, `ReInnerBand`, CTAs in `apps/real-estate-web/src/components/realestate/inner/ReInnerBlocks.tsx` |
+| Jewellery | `JwPageHeader`, `JwInnerBand`, CTAs in `apps/jewellery-web/src/components/jewellery/inner/JwInnerBlocks.tsx` |
+| Spacing | RE: `py-6 md:py-8` headers; JW: `.jw-section-inner` (tighter than home `.jw-section`) |
+| Footers | Compact 12-column layout; **Quick links** + **Explore/Showroom** in **two-column link grids**; legal strip |
 
----
+### Real estate inner routes updated
 
-## 2. Code changes this cleanup
+| Route | Supporting sections added |
+|-------|---------------------------|
+| `/about` | Services/links strip, enquire CTA bar |
+| `/projects` | Buying process (compact), site-visit enquire bar |
+| `/properties` | Availability note, enquire bar |
+| `/properties/[slug]` | Location/contact strip; shorter hero image |
+| `/jk-nagar` | Compact header; tighter enquiry block |
+| `/jk-nagar/phase-*` | Breadcrumbs, compact layout; site-visit bar (phases 1–2) |
+| `/gallery` | Project quick links |
+| `/location` | Directions/contact strip |
+| `/contact` | Enquiry guide (3 steps) |
+| `/faq` | Compact FAQ + contact CTA |
 
-| Change | Deploy needed? |
-|--------|----------------|
-| Git rules + `GIT-BACKUP.md` | No |
-| Gold scheme CTA: **Enquire About Gold Scheme** on `/gold-schemes` only | Yes — `jew` target if not yet live |
-| KJPL / rates / scheme backend | Already on production from prior deploy (`re,jew,api`) |
+Home `/` unchanged (full hero). Privacy/terms unchanged layout.
 
----
+### Jewellery inner routes updated
 
-## 3. KJPL verification (production)
-
-**Config on VPS (non-secret keys only):** `MARKET_RATES_SOURCE=kjpl`, `KJPL_RATES_ENABLED=true`, `KJPL_POLL_INTERVAL_MINUTES=15`.
-
-| Check | Status | Evidence |
-|-------|--------|----------|
-| Live API valid KJPL values | **PASS** | `GET /api/v1/public/jewellery/market-rates` — `provider=kjpl.in`, `configured=true`, `schedulerEnabled=true` |
-| Gold/silver with & without GST | **PASS** | e.g. gold 13590 / 13997.7, silver 245 / 252.35 (values change with KJPL; verified same on API and `/gold-rates` page) |
-| Source + timestamps | **PASS** | `sourceTimestampGold`: `14-10-2026 09:38:07 am M`; `fetchedAt` ISO on API; UI “Last fetched” + KJPL page time |
-| Per-gram 22K/24K shop prices | **PASS** — not shown | `price24kPerGram` null; UI MJDTA labels + disclaimer |
-| Poll scheduler | **PASS** (startup) | PM2 log: `KJPL scheduler polling every 15 minutes` + initial cache at API restart |
-| Second poll cycle | **NOT TESTED** | Requires waiting ≥15 minutes or log inspection over time |
-| Cache key | **PASS** (design) | `kjpl_rates_cache_v1` in `app_settings` |
-| Failed fetch does not overwrite cache | **PASS** (code) | `persistCache` only on successful parse; failures return error without write — **NOT TESTED** with live forced failure |
-| Stale warning (>45 min) | **NOT TESTED** live | `isStale=false` while cache age &lt; 45 min; logic in `KjplService` |
-| Jewellery SSR uses server API | **PASS** | `MarketRatesBanner` prefers `SERVER_API_URL`; `/gold-rates` shows KJPL blocks (not “unavailable”) |
-| Browser desktop | **PASS** | KJPL source, four rate cards, disclaimers |
-| Mobile nav drawer | **PASS** | Open/close menu on `/gold-rates` |
-| Console / network deep audit | **NOT TESTED** | No automated console scan this session |
-
-**KJPL permission / legal:** No verified public JSON API; `robots.txt` not reliably available (404/500 in prior checks). **No evidence KJPL granted automated access.** Business uses publicly displayed MJDTA HTML at 15-minute intervals. Residual legal/ToS risk remains — document, do not hide.
+| Route | Supporting sections added |
+|-------|---------------------------|
+| `/collections` | Showroom CTA bar |
+| `/collections/[id]` | Other collections links, showroom bar |
+| `/gold-rates` | Rates explainer (MJDTA / not shop price); compact rates panel |
+| `/gold-schemes` | Scheme process note (3 steps); enquiry-only form unchanged |
+| `/about` | Trust/hours strip, showroom bar |
+| `/services` | Showroom contact bar |
+| `/gallery` | Showroom bar |
+| `/visit` | Compact header + map |
+| `/contact` | Compact header + directions link |
+| `/faq` | Extra FAQs (rates, making charges, scheme); contact CTA |
 
 ---
 
-## 4. Gold scheme (enquiry only)
+## 2. Integrations preserved
 
-| Check | Status |
-|-------|--------|
-| Amount range ₹5,000–₹1,00,000 | **PASS** — UI presets + custom clamp |
-| `GOLD_SCHEME_ENQUIRY` + `schemeAmountInr` | **PASS** — API |
-| Reject below min / above max | **PASS** — production 400 for `1000` and `500000` |
-| Missing amount on scheme lead | **PASS** — production 400 |
-| No payment / enrolment / returns copy | **PASS** — page copy |
-| Success only after API OK | **PASS** — `ContactLeadForm` sets `ok` only after `apiPost` succeeds |
-| Duplicate submit guard | **PASS** — `submitting` disables button |
-| CTA wording | **PASS** — production button **Enquire About Gold Scheme** (not Buy/Invest) |
-| End-to-end lead in admin | **NOT TESTED** — no fake production leads submitted |
-| Local/unit tests | **PASS** — `public-scheme-lead.spec.ts` in `test:api` |
-
----
-
-## 5. Production deployment
-
-| Item | Status |
-|------|--------|
-| Last full public+API deploy | **PASS** — `re,jew,api` (build marker on VPS) |
-| Deploy required for this cleanup | **Only if** gold-scheme CTA commit not yet on live `jew` |
-| Admin panel | **Not redeployed** (CMS nav in git only) |
-
-**Verify URLs:**
-
-- `https://api.jkbalaji.in/api/v1/health` — **200**
-- `https://api.jkbalaji.in/api/v1/public/jewellery/market-rates` — **200**, KJPL
-- `https://cheyyarbalaji.com/gold-rates` — **200**, rates match API
-- `https://cheyyarbalaji.com/gold-schemes` — **200**
-- `https://jkbalaji.in/` — **200**; `/assets/images/realestate.jpg` — **200**
-
----
-
-## 6. Tests & builds (this session)
-
-| Command | Result |
+| Feature | Status |
 |---------|--------|
-| `npm run test:api` | **PASS** — 41 |
-| `npm run typecheck:jew` | **PASS** |
+| KJPL market rates (API) | **PASS** — not modified this UI deploy; production `provider=kjpl.in`, `isStale=false` |
+| Gold scheme enquiry ₹5k–₹1L | **PASS** — API rejects invalid amount (e.g. 999 → 400); CTA **Enquire About Gold Scheme** |
+| RE API listings / leads | Unchanged |
+| Phase 3 interest-only | Unchanged |
+
+**KJPL legal:** Still no verified permission from KJPL; operational risk documented — not changed in this task.
+
+---
+
+## 3. Git & deploy
+
+| Step | Result |
+|------|--------|
+| Tests | **PASS** — `test:api` 41; `typecheck:re`, `typecheck:jew`; `build:public` |
+| Commit | **PASS** — `ff487a9` |
+| HTTPS push | **PASS** — `origin/main` = `ff487a9` |
+| Deploy | **PASS** — `.\deploy.ps1 -BuildTargets "re,jew" -SkipDbMigrate` (no API; KJPL env untouched) |
+| `typecheck:erp` / `build:api` | **NOT RUN** — no API/admin changes this release |
+
+---
+
+## 4. Production verification (2026-10-14)
+
+| Check | Result |
+|-------|--------|
+| RE inner routes (sample) | **PASS** — HTTP 200 on `/about`, `/projects`, `/properties`, `/gallery`, `/faq` |
+| JW inner routes (sample) | **PASS** — HTTP 200 on collections, gold-rates, gold-schemes, services, gallery, faq |
+| Browser — `/projects` | **PASS** — buying process + compact footer (Quick links / Explore 2-col) |
+| Browser — `/collections` | **PASS** — showroom CTA + compact footer |
+| API health | **NOT TESTED** this pass (unchanged) |
+| `/public/jewellery/market-rates` | **PASS** — KJPL, not stale |
+| Full mobile/tablet matrix | **NOT TESTED** — desktop browser + HTTP only |
+| Production lead submit | **NOT TESTED** — no fake leads |
+
+---
+
+## 5. Key files changed (`ff487a9`)
+
+- `apps/real-estate-web/src/components/realestate/inner/ReInnerBlocks.tsx` (new)
+- `apps/real-estate-web/src/components/site/RealEstateFooter.tsx`
+- `apps/jewellery-web/src/components/jewellery/inner/JwInnerBlocks.tsx` (new)
+- `apps/jewellery-web/src/components/jewellery/JewelleryFooter.tsx`
+- All listed inner `page.tsx` files on both apps
+- `apps/*/src/styles/*.css` — inner spacing helpers
+
+---
+
+## 6. Git backup rules
+
+HTTPS backup documented in `.cursor/rules/20-deploy-safety.mdc`, `50-git-backup-only.mdc`, and `docs/GIT-BACKUP.md`. Remote: `https://github.com/vigneshjai1321/jkbalaji.git`.
 
 ---
 
 ## 7. Blockers / follow-ups
 
-1. Confirm **KJPL** terms in writing when possible.  
-2. **Gold scheme** — approved terms + payment still out of scope.  
-3. Optional: watch PM2 logs for recurring `KJPL rates cached` every 15 minutes.  
-4. Set local `git remote` to HTTPS if still on `git@github.com` (see `docs/GIT-BACKUP.md`).
+1. KJPL written permission — still recommended.  
+2. Gold scheme — enquiry-only; business terms + payment out of scope.  
+3. Optional full responsive QA pass on tablet widths.  
+4. Admin CMS nav in git — deploy `admin` when staff role restrictions should go live.
