@@ -1,7 +1,8 @@
 # Website UI expansion — final status (cleanup verification)
 
 **Last updated:** 2026-10-14  
-**GitHub `main`:** verify after latest push with `git ls-remote origin refs/heads/main`
+**GitHub `main`:** **`22f28bb`** (HTTPS push verified via `git ls-remote origin refs/heads/main`)  
+**Latest deploy:** `.\deploy.ps1 -BuildTargets "jew" -SkipDbMigrate` — **PASS** (CTA label live on `/gold-schemes`)
 
 ---
 
@@ -64,7 +65,7 @@
 | No payment / enrolment / returns copy | **PASS** — page copy |
 | Success only after API OK | **PASS** — `ContactLeadForm` sets `ok` only after `apiPost` succeeds |
 | Duplicate submit guard | **PASS** — `submitting` disables button |
-| CTA wording | **PASS** (after jew deploy) — **Enquire About Gold Scheme**; not Buy/Invest |
+| CTA wording | **PASS** — production button **Enquire About Gold Scheme** (not Buy/Invest) |
 | End-to-end lead in admin | **NOT TESTED** — no fake production leads submitted |
 | Local/unit tests | **PASS** — `public-scheme-lead.spec.ts` in `test:api` |
 
