@@ -2,6 +2,7 @@
 
 | Folder / file | Contents |
 |---------------|----------|
+| `GIT-BACKUP.md` | Git/GitHub **backup only** — checkpoint, push, restore (not deploy) |
 | `LIVE-ARCHITECTURE.md` | **Current** apps, ports, PM2 names, dev/build/deploy commands (verified vs unverified) |
 | `architecture/ARCHITECTURE.md` | Full blueprint: decisions, layering, auth, RBAC, API conventions, naming, frontend data flow |
 | `architecture/FOLDER-STRUCTURE.md` | Annotated repository tree |

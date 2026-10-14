@@ -25,11 +25,14 @@ const SETTING_KEY = 'billing_seller_profile';
 
 const BILLING_CONTACT_DEFAULT = 'tmlcheyyar@gmail.com';
 
+const DEFAULT_ADDRESS =
+  'No 49/3, Gandhi Road, Cheyyar, Tiruvannamalai - 604407, Tamil Nadu';
+
 const ENV_FALLBACK: SellerProfile = {
-  tradeName: process.env.BILLING_TRADE_NAME?.trim() || 'Sri Balaji Thangamaligai',
-  legalName: process.env.BILLING_LEGAL_NAME?.trim() || 'Sri Balaji Thangamaligai',
-  address: process.env.BILLING_ADDRESS?.trim() ?? '',
-  gstin: process.env.COMPANY_GSTIN?.trim() ?? '',
+  tradeName: process.env.BILLING_TRADE_NAME?.trim() || 'SRI BALAJI THANGAMALIGAI',
+  legalName: process.env.BILLING_LEGAL_NAME?.trim() || 'SRI BALAJI THANGAMALIGAI',
+  address: process.env.BILLING_ADDRESS?.trim() || DEFAULT_ADDRESS,
+  gstin: process.env.COMPANY_GSTIN?.trim() || '33AAHCJ1786C1ZQ',
   phone: process.env.COMPANY_PHONE?.trim() ?? '',
   email: process.env.BILLING_EMAIL?.trim() || BILLING_CONTACT_DEFAULT,
   stateCode: process.env.BILLING_STATE_CODE?.trim() ?? '33',

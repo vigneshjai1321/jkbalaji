@@ -15,7 +15,8 @@ param(
   [string]$RemoteRoot = "/root/jkbalaji",
   [string]$BuildTargets = "admin,api",
   [switch]$SkipBuildLocal,
-  [switch]$SkipSsl
+  [switch]$SkipSsl,
+  [switch]$SkipDbMigrate
 )
 
 $ErrorActionPreference = "Stop"
@@ -171,6 +172,7 @@ tar -xzf jkbalaji-src.tgz -C $RemoteRoot
 chmod +x deployment/scripts/vps-install.sh deployment/scripts/verify-deploy.sh deployment/scripts/prune-stale-paths.sh 2>/dev/null || true
 export BUILD_TARGETS='$BuildTargets'
 export SKIP_DB_SEED=1
+$(if ($SkipDbMigrate) { 'export SKIP_DB_MIGRATE=1' })
 bash deployment/scripts/vps-install.sh
 "@
   $remoteInstallOutput = & {

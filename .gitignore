@@ -22,7 +22,7 @@ deployment/DEPLOYMENT_REPORT.md
 .env
 .env.*
 !.env.example
-!deploy/env/*.example
+!deployment/env/*.example
 
 # logs & runtime
 logs/

@@ -28,7 +28,7 @@ describe('planPlotImport — JK Nagar Phase 1 list', () => {
     );
     expect(plan.imported).toHaveLength(0);
     expect(plan.conflicts).toHaveLength(1);
-    expect(plan.conflicts[0].existingAreaSqft).toBe(1278.75);
+    expect(plan.conflicts[0]?.existingAreaSqft).toBe(1278.75);
     expect(plan.duplicates).toHaveLength(0);
   });
 

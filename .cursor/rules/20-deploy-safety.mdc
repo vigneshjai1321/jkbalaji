@@ -1,14 +1,33 @@
 ---
-description: Deploy and VPS install safety
-globs: deployment/**/*
-alwaysApply: false
+description: Production deploy and GitHub backup workflow (JK Balaji)
+alwaysApply: true
 ---
 
-# Deploy safety
+# Deployment and backup safety
 
-- Do not run `deploy.ps1` or change production PM2 unless the user explicitly requests a production deploy.
-- `BUILD_TARGETS` controls which apps build and restart; default ERP release is `admin,api`.
+GitHub (`git@github.com:vigneshjai1321/jkbalaji.git`) is **source backup only** — never add GitHub Actions or auto-deploy from push.
+
+## Before any deploy
+
+1. Inspect `git status`, branch, remotes, and diff; preserve unrelated user changes.
+2. Run relevant checks (e.g. `npm run test:api`, `npm run typecheck:erp`, `npm run build:erp` for admin/API releases).
+3. Review staged files — never commit `.env`, `PROJECT_CREDENTIALS.txt`, keys, dumps, `node_modules`, `.next`, `dist`, `backups/`, or deploy artifacts.
+4. Create a descriptive local commit when there are real changes; do not amend history without approval.
+5. Push to `origin main` only when the user authorized it and SSH/HTTPS auth works; never force-push.
+
+## Deploy execution
+
+- Use `deployment/deploy.ps1` with explicit `-BuildTargets` (ERP default: `admin,api`).
+- Do not rebuild/restart public sites unless targets include `re` / `jew` / `all`.
+- Pass `-SkipDbMigrate` when no approved schema change; `deploy.ps1` sets `SKIP_DB_SEED=1` by default.
 - Remote install must fail closed: non-zero exit if build, SSH, or `verify-deploy.sh` fails.
-- Success requires `logs/last-deploy-build.ok`, not merely a running old API process.
-- Stale file removal: only paths listed in `deployment/scripts/removed-src-paths.txt` via `prune-stale-paths.sh` — no wildcards, no `..`, support `DRY_RUN=1`.
-- Migrations/seeds: use `SKIP_DB_MIGRATE=1` / `SKIP_DB_SEED=1` when the user forbids schema or data changes.
+- Success requires `logs/last-deploy-build.ok` and PM2 online for requested targets — not merely an old API health 200.
+- Stale paths: only `deployment/scripts/removed-src-paths.txt` via `prune-stale-paths.sh` (`DRY_RUN=1` to inspect).
+
+## After deploy
+
+- Verify API health, PM2 for `jkbalaji-admin` and `jkbalaji-api`, admin billing pages, and that public PM2 apps were not restarted unless targeted.
+- Report actual commands, test results, commit hash, push status, and verification evidence.
+- Stop and report blockers; never claim deploy success without verification.
+
+See `docs/GIT-BACKUP.md` and `docs/LIVE-ARCHITECTURE.md`.

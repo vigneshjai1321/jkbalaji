@@ -2,7 +2,7 @@
 
 import type { SellerProfile } from '@/lib/billing-types';
 import { amountInWordsInr } from '@/lib/amount-in-words';
-import type { InvoicePrintLayout } from '@/lib/invoice-print-layout';
+import { gstinFormatHint } from '@/lib/gstin-format';
 
 type Line = {
   description: string;
@@ -36,7 +36,6 @@ export type InvoiceDocumentProps = {
   amountPaidInr?: string | number;
   paymentTerms?: string | null;
   notes?: string | null;
-  layout?: InvoicePrintLayout;
 };
 
 function n(v: string | number | undefined | null) {
@@ -47,252 +46,166 @@ function fmt(v: string | number | undefined | null) {
   return n(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function ShopBillHeader({ seller, gst, compact }: { seller: SellerProfile; gst: boolean; compact: boolean }) {
+function SellerHeader({ seller, gst }: { seller: SellerProfile; gst: boolean }) {
   const shopTitle = (seller.tradeName || seller.legalName || '—').toUpperCase();
-  const contactLine = [seller.phone, seller.email].filter(Boolean).join(' · ');
-  if (compact) {
-    return (
-      <header className="text-center border-b border-slate-800 pb-1.5 mb-1.5">
-        {seller.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={seller.logoUrl} alt="" className="h-8 mx-auto object-contain mb-0.5" />
-        ) : null}
-        <p className="font-bold text-[11px] tracking-wide text-slate-900">{shopTitle}</p>
-        {seller.address ? <p className="text-[8px] text-slate-600 leading-tight">{seller.address.replace(/\n/g, ', ')}</p> : null}
-        {contactLine ? <p className="text-[8px] text-slate-600">{contactLine}</p> : null}
-        {gst && seller.gstin ? <p className="text-[8px] text-slate-600">GSTIN {seller.gstin}</p> : null}
-      </header>
-    );
-  }
+  const gstHint = gst && seller.gstin ? gstinFormatHint(seller.gstin) : null;
+
   return (
-    <header className="text-center border-b border-slate-200 pb-2 mb-3">
+    <header className="text-center border-b border-slate-300 pb-3 mb-4">
       {seller.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={seller.logoUrl} alt="" className="h-12 mx-auto object-contain mb-1" />
+        <img src={seller.logoUrl} alt="" className="h-14 mx-auto object-contain mb-2" />
       ) : null}
-      <h1 className="text-base font-bold tracking-wide text-slate-900">{shopTitle}</h1>
-      {seller.legalName && seller.legalName !== seller.tradeName ? (
-        <p className="text-[9px] text-slate-600">{seller.legalName}</p>
+      <h1 className="text-lg font-semibold tracking-[0.12em] text-slate-900">{shopTitle}</h1>
+      {seller.legalName && seller.legalName.toUpperCase() !== shopTitle ? (
+        <p className="text-[10px] text-slate-600 mt-0.5">{seller.legalName}</p>
       ) : null}
-      {seller.address ? <p className="text-[10px] text-slate-600 whitespace-pre-line max-w-md mx-auto">{seller.address}</p> : null}
-      {contactLine ? <p className="text-[10px] text-slate-600 mt-0.5">{contactLine}</p> : null}
-      {gst && seller.gstin ? <p className="text-[10px] mt-0.5">GSTIN: {seller.gstin}</p> : null}
+      {seller.address ? (
+        <p className="text-[11px] text-slate-700 whitespace-pre-line max-w-lg mx-auto mt-1 leading-snug">{seller.address}</p>
+      ) : null}
+      <div className="text-[11px] text-slate-700 mt-1.5 space-y-0.5">
+        {seller.phone ? <p>Phone: {seller.phone}</p> : null}
+        {seller.email ? <p>{seller.email}</p> : null}
+        {gst && seller.gstin ? (
+          <p>
+            GSTIN: <span className="font-medium tracking-wide">{seller.gstin.toUpperCase()}</span>
+            {gstHint ? <span className="block text-amber-700 text-[10px] mt-0.5">{gstHint}</span> : null}
+          </p>
+        ) : null}
+      </div>
     </header>
-  );
-}
-
-function TotalsBlock({
-  props,
-  compact,
-  gst,
-  balance,
-}: {
-  props: InvoiceDocumentProps;
-  compact: boolean;
-  gst: boolean;
-  balance: number;
-}) {
-  const row = compact ? 'flex justify-between gap-2 text-[9px]' : 'flex justify-between gap-2';
-  const grand = compact ? 'flex justify-between font-bold border-t border-slate-300 pt-0.5 mt-0.5 text-[10px]' : 'flex justify-between font-bold text-sm border-t border-slate-200 pt-1';
-
-  return (
-    <dl className={compact ? 'space-y-0.5 w-full max-w-[72mm] ml-auto' : 'w-full max-w-xs space-y-0.5'}>
-      <div className={row}>
-        <dt>Subtotal</dt>
-        <dd className="tabular-nums">₹ {fmt(props.subtotalInr)}</dd>
-      </div>
-      {n(props.discountInr) > 0 ? (
-        <div className={row}>
-          <dt>Discount</dt>
-          <dd className="tabular-nums">₹ {fmt(props.discountInr)}</dd>
-        </div>
-      ) : null}
-      {gst && n(props.cgstInr) > 0 ? (
-        <>
-          <div className={row}>
-            <dt>CGST</dt>
-            <dd className="tabular-nums">₹ {fmt(props.cgstInr)}</dd>
-          </div>
-          <div className={row}>
-            <dt>SGST</dt>
-            <dd className="tabular-nums">₹ {fmt(props.sgstInr)}</dd>
-          </div>
-        </>
-      ) : null}
-      {gst && n(props.igstInr) > 0 ? (
-        <div className={row}>
-          <dt>IGST</dt>
-          <dd className="tabular-nums">₹ {fmt(props.igstInr)}</dd>
-        </div>
-      ) : null}
-      <div className={grand}>
-        <dt>Grand Total</dt>
-        <dd className="tabular-nums">₹ {fmt(props.totalInr)}</dd>
-      </div>
-      {!compact ? <p className="text-[9px] italic text-slate-600 text-right">{amountInWordsInr(props.totalInr)}</p> : null}
-      {n(props.amountPaidInr) > 0 || !compact ? (
-        <>
-          <div className={row}>
-            <dt>Paid</dt>
-            <dd className="tabular-nums">₹ {fmt(props.amountPaidInr)}</dd>
-          </div>
-          <div className={`${row} font-semibold`}>
-            <dt>Balance</dt>
-            <dd className="tabular-nums">₹ {fmt(balance)}</dd>
-          </div>
-        </>
-      ) : null}
-    </dl>
   );
 }
 
 export function InvoiceDocument(props: InvoiceDocumentProps) {
   const gst = props.gstApplied !== false;
   const balance = Math.max(0, n(props.totalInr) - n(props.amountPaidInr));
-  const displayName = props.seller.tradeName || props.seller.legalName || '—';
-  const compact = props.layout === 'compact';
-  const showBank = Boolean(props.seller.bankDetails?.trim()) && (!compact || props.lines.length <= 4);
-  const showSignatory = !compact || props.status === 'ISSUED' || props.status === 'PAID';
-
-  if (compact) {
-    return (
-      <article className="invoice-compact mx-auto bg-white text-slate-900 shadow-lg print:shadow-none">
-        <div className="invoice-compact-inner">
-          <ShopBillHeader seller={props.seller} gst={gst} compact />
-          <div className="flex justify-between text-[8px] border-b border-slate-200 pb-1 mb-1.5">
-            <p className="font-bold text-emerald-900">{gst ? 'TAX INVOICE' : 'BILL'}</p>
-            <div className="text-right">
-              <p>
-                <span className="text-slate-500">No </span>
-                {props.invoiceNo}
-              </p>
-              <p>
-                <span className="text-slate-500">Date </span>
-                {new Date(props.invoiceDate).toLocaleDateString('en-IN')}
-              </p>
-              {props.dueDate ? (
-                <p>
-                  <span className="text-slate-500">Due </span>
-                  {new Date(props.dueDate).toLocaleDateString('en-IN')}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          <section className="text-[8px] border-b border-slate-200 pb-1 mb-1.5">
-            <span className="font-semibold text-slate-700">Bill To: </span>
-            <span className="font-medium">{props.customer.name}</span>
-            <span className="text-slate-600"> · {props.customer.phone}</span>
-            {props.customer.gstin ? <span className="text-slate-600"> · GSTIN {props.customer.gstin}</span> : null}
-            {props.customer.address ? <p className="text-slate-600 mt-0.5">{props.customer.address.replace(/\n/g, ', ')}</p> : null}
-          </section>
-
-          <table className="w-full border-collapse text-[8px] mb-1.5">
-            <thead>
-              <tr className="border-y border-slate-800 bg-slate-50">
-                <th className="text-left py-0.5 pr-1 font-semibold">Item</th>
-                {gst ? <th className="text-left py-0.5 px-0.5 font-semibold w-[14%]">HSN</th> : null}
-                <th className="text-right py-0.5 px-0.5 font-semibold w-[10%]">Qty</th>
-                <th className="text-right py-0.5 px-0.5 font-semibold w-[14%]">Rate</th>
-                <th className="text-right py-0.5 pl-1 font-semibold w-[16%]">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {props.lines.map((l, i) => (
-                <tr key={i} className="border-b border-slate-100">
-                  <td className="py-0.5 pr-1 align-top">{l.description}</td>
-                  {gst ? <td className="py-0.5 px-0.5 align-top">{l.hsnSac ?? '—'}</td> : null}
-                  <td className="py-0.5 px-0.5 text-right tabular-nums align-top">
-                    {l.qty} {l.unit ?? 'nos'}
-                  </td>
-                  <td className="py-0.5 px-0.5 text-right tabular-nums align-top">{fmt(l.rateInr)}</td>
-                  <td className="py-0.5 pl-1 text-right tabular-nums align-top font-medium">{fmt(l.amountInr)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end border-t border-slate-300 pt-1">
-            <TotalsBlock props={props} compact gst={gst} balance={balance} />
-          </div>
-
-          {(showBank || props.paymentTerms || props.notes || props.seller.invoiceFooter) && (
-            <footer className="mt-1.5 pt-1 border-t border-slate-200 text-[7.5px] text-slate-600 space-y-0.5">
-              {showBank ? <p className="whitespace-pre-line">{props.seller.bankDetails}</p> : null}
-              {props.paymentTerms ? <p>Terms: {props.paymentTerms}</p> : null}
-              {props.notes ? <p>Note: {props.notes}</p> : null}
-              {props.seller.invoiceFooter ? <p>{props.seller.invoiceFooter}</p> : null}
-            </footer>
-          )}
-
-          {showSignatory ? (
-            <p className="text-[7px] text-slate-500 mt-2 text-right">Authorised signatory</p>
-          ) : null}
-        </div>
-      </article>
-    );
-  }
+  const docTitle = gst ? 'TAX INVOICE' : 'INVOICE';
+  const showStatus = !['PREVIEW', 'SAMPLE'].includes(props.status);
 
   return (
-    <article className="invoice-a4 mx-auto bg-white text-slate-900 shadow-xl print:shadow-none text-[11px] leading-snug">
-      <ShopBillHeader seller={props.seller} gst={gst} compact={false} />
-      <div className="flex flex-wrap justify-between gap-2 border-b border-slate-100 pb-2 mb-3 text-[11px]">
-        <p className="font-bold text-emerald-900">{gst ? 'TAX INVOICE' : 'INVOICE / BILL'}</p>
-        <div className="text-right">
-          <p>No: {props.invoiceNo}</p>
-          <p>Date: {new Date(props.invoiceDate).toLocaleDateString('en-IN')}</p>
-          {props.dueDate ? <p>Due: {new Date(props.dueDate).toLocaleDateString('en-IN')}</p> : null}
-          <p className="uppercase tracking-wide text-slate-500 text-[10px]">{props.status.replace(/_/g, ' ')}</p>
+    <article className="invoice-a4 mx-auto bg-white text-slate-900 shadow-lg print:shadow-none">
+      <SellerHeader seller={props.seller} gst={gst} />
+
+      <div className="flex flex-wrap justify-between gap-3 border-b border-slate-200 pb-2 mb-3 text-[11px]">
+        <p className="font-semibold text-slate-800 tracking-wide">{docTitle}</p>
+        <div className="text-right tabular-nums">
+          <p>
+            <span className="text-slate-500">Invoice No. </span>
+            <span className="font-medium">{props.invoiceNo}</span>
+          </p>
+          <p>
+            <span className="text-slate-500">Date </span>
+            {new Date(props.invoiceDate).toLocaleDateString('en-IN')}
+          </p>
+          {props.dueDate ? (
+            <p>
+              <span className="text-slate-500">Due </span>
+              {new Date(props.dueDate).toLocaleDateString('en-IN')}
+            </p>
+          ) : null}
+          {showStatus ? <p className="text-[10px] uppercase text-slate-500 mt-0.5">{props.status.replace(/_/g, ' ')}</p> : null}
         </div>
       </div>
 
-      <section className="mt-3 rounded-lg bg-slate-50 p-2.5 text-[11px]">
-        <p className="font-semibold text-slate-800">Bill To</p>
-        <p className="font-medium">{props.customer.name}</p>
-        <p className="text-slate-600">{props.customer.phone}</p>
-        {props.customer.email ? <p className="text-slate-600">{props.customer.email}</p> : null}
-        {props.customer.address ? <p className="text-slate-600 whitespace-pre-line">{props.customer.address}</p> : null}
-        {props.customer.gstin ? <p className="text-slate-600">GSTIN: {props.customer.gstin}</p> : null}
+      <section className="mb-4 text-[11px] border border-slate-200 rounded-sm p-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1">Bill To</p>
+        <p className="font-medium text-slate-900">{props.customer.name}</p>
+        <p className="text-slate-700">{props.customer.phone}</p>
+        {props.customer.email ? <p className="text-slate-700">{props.customer.email}</p> : null}
+        {props.customer.address ? <p className="text-slate-700 whitespace-pre-line mt-0.5">{props.customer.address}</p> : null}
+        {props.customer.gstin ? <p className="text-slate-700 mt-0.5">GSTIN: {props.customer.gstin.toUpperCase()}</p> : null}
       </section>
 
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full border-collapse">
+      <div className="overflow-x-auto">
+        <table className="invoice-lines w-full border-collapse text-[11px]">
           <thead>
-            <tr className="bg-emerald-800 text-white text-[10px]">
-              <th className="text-left p-1.5">Description</th>
-              {gst ? <th className="text-left p-1.5">HSN/SAC</th> : null}
-              <th className="text-right p-1.5">Qty</th>
-              <th className="text-right p-1.5">Unit</th>
-              <th className="text-right p-1.5">Rate</th>
-              <th className="text-right p-1.5">Amount</th>
+            <tr className="border-y border-slate-400 text-[10px]">
+              <th className="text-left py-1.5 pr-2 font-semibold text-slate-700">Description</th>
+              {gst ? <th className="text-left py-1.5 px-1 font-semibold text-slate-700 w-[12%]">HSN/SAC</th> : null}
+              <th className="text-right py-1.5 px-1 font-semibold text-slate-700 w-[10%]">Qty</th>
+              <th className="text-right py-1.5 px-1 font-semibold text-slate-700 w-[10%]">Unit</th>
+              <th className="text-right py-1.5 px-1 font-semibold text-slate-700 w-[14%]">Rate (₹)</th>
+              {gst ? <th className="text-right py-1.5 px-1 font-semibold text-slate-700 w-[14%]">Taxable (₹)</th> : null}
+              <th className="text-right py-1.5 pl-1 font-semibold text-slate-700 w-[14%]">Amount (₹)</th>
             </tr>
           </thead>
           <tbody>
             {props.lines.map((l, i) => (
-              <tr key={i} className={i % 2 ? 'bg-slate-50' : ''}>
-                <td className="p-1.5">{l.description}</td>
-                {gst ? <td className="p-1.5">{l.hsnSac ?? '—'}</td> : null}
-                <td className="p-1.5 text-right tabular-nums">{l.qty}</td>
-                <td className="p-1.5 text-right">{l.unit ?? 'nos'}</td>
-                <td className="p-1.5 text-right tabular-nums">{fmt(l.rateInr)}</td>
-                <td className="p-1.5 text-right tabular-nums">{fmt(l.amountInr)}</td>
+              <tr key={i} className="border-b border-slate-100 align-top">
+                <td className="py-1.5 pr-2">{l.description}</td>
+                {gst ? <td className="py-1.5 px-1 text-slate-700">{l.hsnSac ?? '—'}</td> : null}
+                <td className="py-1.5 px-1 text-right tabular-nums">{l.qty}</td>
+                <td className="py-1.5 px-1 text-right text-slate-700">{l.unit ?? 'nos'}</td>
+                <td className="py-1.5 px-1 text-right tabular-nums">{fmt(l.rateInr)}</td>
+                {gst ? <td className="py-1.5 px-1 text-right tabular-nums">{fmt(l.taxableInr ?? l.amountInr)}</td> : null}
+                <td className="py-1.5 pl-1 text-right tabular-nums font-medium">{fmt(l.amountInr)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-3 flex justify-end">
-        <TotalsBlock props={props} compact={false} gst={gst} balance={balance} />
+      <div className="mt-4 flex justify-end">
+        <dl className="w-full max-w-sm space-y-1 text-[11px] border-t border-slate-300 pt-2">
+          <div className="flex justify-between gap-4">
+            <dt className="text-slate-600">Subtotal</dt>
+            <dd className="tabular-nums">₹ {fmt(props.subtotalInr)}</dd>
+          </div>
+          {n(props.discountInr) > 0 ? (
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-600">Discount</dt>
+              <dd className="tabular-nums">₹ {fmt(props.discountInr)}</dd>
+            </div>
+          ) : null}
+          {gst && n(props.cgstInr) > 0 ? (
+            <>
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-600">CGST</dt>
+                <dd className="tabular-nums">₹ {fmt(props.cgstInr)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-600">SGST</dt>
+                <dd className="tabular-nums">₹ {fmt(props.sgstInr)}</dd>
+              </div>
+            </>
+          ) : null}
+          {gst && n(props.igstInr) > 0 ? (
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-600">IGST</dt>
+              <dd className="tabular-nums">₹ {fmt(props.igstInr)}</dd>
+            </div>
+          ) : null}
+          <div className="flex justify-between gap-4 pt-2 mt-1 border-t border-slate-400 font-semibold text-[13px] text-slate-900">
+            <dt>Amount Payable</dt>
+            <dd className="tabular-nums">₹ {fmt(props.totalInr)}</dd>
+          </div>
+          <p className="text-[10px] italic text-slate-600 text-right pt-0.5">{amountInWordsInr(props.totalInr)}</p>
+          {n(props.amountPaidInr) > 0 ? (
+            <>
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-600">Paid</dt>
+                <dd className="tabular-nums">₹ {fmt(props.amountPaidInr)}</dd>
+              </div>
+              <div className="flex justify-between gap-4 font-medium">
+                <dt>Balance due</dt>
+                <dd className="tabular-nums">₹ {fmt(balance)}</dd>
+              </div>
+            </>
+          ) : null}
+        </dl>
       </div>
 
-      <footer className="mt-6 text-[10px] text-slate-600 space-y-1 print:mt-4">
-        {props.seller.bankDetails?.trim() ? <p className="whitespace-pre-line">Bank: {props.seller.bankDetails}</p> : null}
+      <footer className="mt-8 pt-3 border-t border-slate-200 text-[10px] text-slate-600 space-y-1 print:mt-6">
+        {props.seller.bankDetails?.trim() ? <p className="whitespace-pre-line">{props.seller.bankDetails}</p> : null}
         {props.paymentTerms ? <p>Payment terms: {props.paymentTerms}</p> : null}
         {props.notes ? <p>Notes: {props.notes}</p> : null}
         {props.seller.invoiceFooter ? <p>{props.seller.invoiceFooter}</p> : null}
-        <p className="pt-4">Authorised Signatory</p>
-        <p className="border-t border-slate-400 w-40 pt-0.5">{displayName}</p>
+        <p className="text-slate-500 pt-2">This is a computer-generated invoice. E. &amp; O.E.</p>
+        <div className="pt-6 print:pt-4">
+          <p className="text-slate-700">Authorised signatory</p>
+          <p className="border-t border-slate-400 w-44 mt-8 pt-1 text-slate-800">{props.seller.tradeName || props.seller.legalName}</p>
+        </div>
       </footer>
     </article>
   );

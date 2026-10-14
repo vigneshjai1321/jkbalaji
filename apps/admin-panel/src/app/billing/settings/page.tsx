@@ -7,6 +7,7 @@ import { AdminPanel } from '@/components/admin/AdminPanel';
 import { AdminBtnPrimary, useAdminInputClass } from '@/components/admin/AdminForm';
 import type { SellerProfile } from '@/lib/billing-types';
 import { BILLING_SUPPORT_EMAIL } from '@/lib/billing-types';
+import { gstinFormatHint } from '@/lib/gstin-format';
 import { useEffect, useState } from 'react';
 
 export default function BillingSettingsPage() {
@@ -85,8 +86,15 @@ export default function BillingSettingsPage() {
               <input
                 className={`${input} mt-1`}
                 value={form[key]}
-                onChange={(e) => setForm((f) => (f ? { ...f, [key]: e.target.value } : f))}
+                onChange={(e) =>
+                  setForm((f) =>
+                    f ? { ...f, [key]: key === 'gstin' ? e.target.value.toUpperCase() : e.target.value } : f,
+                  )
+                }
               />
+              {key === 'gstin' && form.gstin ? (
+                <span className="text-xs text-amber-700 block mt-1">{gstinFormatHint(form.gstin) ?? 'Format check only — verify against your registration.'}</span>
+              ) : null}
             </label>
           ))}
           <label className="block text-sm sm:col-span-2">

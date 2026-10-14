@@ -22,6 +22,7 @@ import {
   isLegacyDraftNo,
   suggestNextInvoiceNo,
 } from './invoice-numbering.js';
+import { gstinFormatIssue } from './gstin-format.js';
 
 export type CustomerSnapshot = {
   name: string;
@@ -62,6 +63,11 @@ export class BillingService {
   }
 
   updateSellerProfile(profile: SellerProfile) {
+    const gstin = profile.gstin?.trim();
+    if (gstin) {
+      const issue = gstinFormatIssue(gstin);
+      if (issue) throw new BadRequestException(issue);
+    }
     return saveSellerProfile(this.prisma, profile);
   }
 

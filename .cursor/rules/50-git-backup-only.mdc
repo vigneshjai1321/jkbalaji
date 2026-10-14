@@ -1,0 +1,15 @@
+---
+description: Git is backup only — not deployment
+alwaysApply: true
+---
+
+# Git backup (not deploy)
+
+- GitHub repo `vigneshjai1321/jkbalaji` is for **source backup and checkpoints** only.
+- **Never** add GitHub Actions, CI/CD, or auto-deploy from git push.
+- Production deploy stays manual: `deployment/deploy.ps1` → VPS (separate approval).
+- Do **not** commit or push unless the user explicitly asks.
+- Before major changes, offer a local checkpoint commit; push only on request.
+- Never commit `.env`, `PROJECT_CREDENTIALS.txt`, keys, dumps, `node_modules`, `.next`, `dist`, `backups/`.
+
+See `docs/GIT-BACKUP.md` for user commands.

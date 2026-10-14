@@ -196,22 +196,16 @@ html:not(:has(.admin-app)) {
     box-shadow: none !important;
     width: 210mm;
     max-width: 210mm;
-    min-height: auto;
+    min-height: auto !important;
     margin: 0 auto;
-    padding: 12mm;
-    page-break-inside: avoid;
+    padding: 10mm 12mm;
+    page-break-after: auto;
   }
-  .invoice-compact {
-    box-shadow: none !important;
-    width: 210mm;
-    max-width: 210mm;
-    margin: 0 auto;
-    page-break-inside: avoid;
+  .invoice-lines thead {
+    display: table-header-group;
   }
-  .invoice-print-compact-wrap .invoice-compact-inner {
-    border: 2px solid #0f172a;
-    padding: 5mm 6mm;
-    background: white;
+  .invoice-lines tr {
+    page-break-inside: avoid;
   }
 }
 
@@ -219,20 +213,11 @@ html:not(:has(.admin-app)) {
   width: 100%;
   max-width: 210mm;
   min-height: auto;
-  padding: 12mm;
+  padding: 12mm 14mm;
+  box-sizing: border-box;
 }
 
-.invoice-compact {
+.invoice-print-wrap {
   width: 100%;
   max-width: 210mm;
-}
-
-.invoice-compact-inner {
-  border: 2px solid #0f172a;
-  padding: 5mm 6mm;
-  background: white;
-}
-
-.invoice-print-full-wrap .invoice-a4 {
-  min-height: 280mm;
 }
