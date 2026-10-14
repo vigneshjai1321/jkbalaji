@@ -1,13 +1,9 @@
-import type { Metadata } from 'next';
 import { FaqSection } from '@/components/site/FaqSection';
+import { reStaticMetadata } from '@/lib/seo/metadata';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
 import { ReFaqContactCta, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 
-export const metadata: Metadata = {
-  title: 'FAQs | JK Balaji Real Estate',
-  description: 'Frequently asked questions about JK Balaji plots, DTCP layouts, and site visits.',
-  alternates: { canonical: 'https://jkbalaji.in/faq' },
-};
+export const metadata = reStaticMetadata('faq');
 
 export default function FaqPage() {
   return (

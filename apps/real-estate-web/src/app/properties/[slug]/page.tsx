@@ -7,6 +7,9 @@ import { resolvePublicAssetUrl } from '@/lib/site-asset-url';
 import { RE_ROUTES } from '@/lib/site-routes';
 import { ReLocationContactStrip } from '@/components/realestate/inner/ReInnerBlocks';
 import { apiGet } from '@/lib/api';
+import { buildRePageMetadata, RE_SITE_ORIGIN } from '@/lib/seo/metadata';
+import { reBreadcrumbJsonLd, reRealEstateListingJsonLd } from '@/lib/seo/json-ld';
+import { JsonLd } from '@/components/site/JsonLd';
 
 type Property = Record<string, unknown> & {
   id: string;
@@ -21,12 +24,25 @@ type Property = Record<string, unknown> & {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const property = await apiGet<Property>(`/public/properties/${slug}`).catch(() => null);
-  if (!property) return { title: 'Property | JK Balaji Real Estate' };
-  return {
-    title: `${property.title} | JK Balaji Real Estate`,
-    description: property.description?.slice(0, 160) ?? `Plot in ${property.location}`,
-    alternates: { canonical: `https://jkbalaji.in/properties/${slug}` },
-  };
+  if (!property) {
+    return buildRePageMetadata({
+      title: 'Property Not Found',
+      description: 'This property listing is not available on JK Balaji Real Estate.',
+      path: `/properties/${slug}`,
+      noIndex: true,
+    });
+  }
+  const desc =
+    property.description?.trim().slice(0, 155) ||
+    `Enquire about ${property.title} in ${property.location} — availability and pricing confirmed with JK Balaji Real Estate.`;
+  const img = property.images?.[0]?.trim();
+  return buildRePageMetadata({
+    title: String(property.title),
+    description: desc,
+    path: `/properties/${slug}`,
+    keywords: ['plot for sale', property.location, 'JK Balaji property'],
+    ogImage: img ? resolvePublicAssetUrl(img) : undefined,
+  });
 }
 
 export default async function PropertyDetail({ params }: { params: Promise<{ slug: string }> }) {
@@ -49,8 +65,27 @@ export default async function PropertyDetail({ params }: { params: Promise<{ slu
   const raw = property.images?.[0]?.trim();
   const img = raw ? resolvePublicAssetUrl(raw) : null;
 
+  const canonical = `${RE_SITE_ORIGIN}/properties/${slug}`;
+
   return (
     <RealEstatePageShell whatsappText={`Enquiry: ${property.title}`}>
+      <JsonLd
+        data={[
+          reBreadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Properties', path: '/properties' },
+            { name: String(property.title), path: `/properties/${slug}` },
+          ]),
+          reRealEstateListingJsonLd({
+            name: String(property.title),
+            description: property.description ? String(property.description) : null,
+            url: canonical,
+            location: String(property.location),
+            priceInr: String(property.priceInr),
+            image: img,
+          }),
+        ]}
+      />
       <div className="re-container py-6 md:py-8 max-w-4xl">
         <Link href={RE_ROUTES.properties} className="text-sm text-emerald-700 font-medium hover:underline">
           ← Back to properties

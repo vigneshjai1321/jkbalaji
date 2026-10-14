@@ -1,8 +1,8 @@
 # Website UI expansion — final status
 
-**Last updated:** 2026-10-14  
-**Latest commit:** `6b52362` — heroes, RE “Our Projects” restore, contact/branding  
-**GitHub `main`:** `6b52362` (HTTPS push verified)
+**Last updated:** 2026-10-14 (final audit deploy in progress)  
+**Latest commit:** _(see §11 after push)_  
+**GitHub `main`:** pending this release
 
 ---
 
@@ -49,6 +49,96 @@
 | HTTPS push | **PASS** |
 | Deploy | **PASS** — `deploy.ps1 -BuildTargets re,jew -SkipDbMigrate`; PM2 `jkbalaji-realestate`, `jkbalaji-jewellery` online |
 | Full tablet/mobile matrix | **NOT TESTED** — desktop browser + production home pages |
+
+---
+
+## 9. Developments section redesign (2026-10-14, local — not deployed)
+
+### Scope
+
+Premium **Our Developments & Real Estate Services** block on RE home and `/projects`: services grid, JK Nagar phase cards (public **Ongoing** badge), CTAs, and **Find the Right Property for You** enquiry block (`#property-enquiry`).
+
+### Public vs admin status
+
+| Layer | Behaviour |
+|-------|-----------|
+| Website | All JK Nagar slugs display **Ongoing** via `publicProjectStatusLabel()` / `jk-nagar-phases.ts` |
+| PostgreSQL / admin | Unchanged (`ALMOST_COMPLETED`, `ONGOING`, `YET_TO_BE_ANNOUNCED` enums preserved); Phase 3 plot inventory still blocked in ERP |
+
+### Verified / outstanding business data
+
+| Item | Status |
+|------|--------|
+| Phase 1 Google Maps link | **Verified** — from user-supplied embed (`JK Nagar Phase -1`) |
+| Phase 2 & 3 map pins | **Not configured** — location text only; add `mapsPlaceUrl` in `jk-nagar-phases.ts` when confirmed |
+| Water / electricity / roads / drainage amenities | **Not listed** — no verified per-phase records in repo; only service-style tags (site visits, documentation) |
+| DTCP / RERA badges | **Not shown** — no registration numbers verified in codebase |
+| API `location` on projects | Often **null** in seed — cards use `locationLabel` from marketing config |
+
+### Key files
+
+- `apps/real-estate-web/src/components/realestate/developments/DevelopmentsSection.tsx`
+- `apps/real-estate-web/src/components/realestate/developments/JkNagarPhaseCard.tsx`
+- `apps/real-estate-web/src/components/realestate/PropertyEnquirySection.tsx`
+- `apps/real-estate-web/src/lib/jk-nagar-phases.ts`, `project-display.ts`, `real-estate-services.ts`
+- `apps/real-estate-web/src/components/ContactLeadForm.tsx` (`variant="property"`)
+- Updated: `JkNagarPhasesSection.tsx`, `JkNagarPhasePage.tsx`, `page.tsx`, `projects/page.tsx`
+
+### Tests (local)
+
+| Check | Result |
+|-------|--------|
+| `typecheck:re` | **PASS** |
+| `build:re` | **PASS** |
+| Browser — home `#projects`, property form, Ongoing badges | **PASS** (localhost desktop) |
+| Mobile/tablet layout | **NOT TESTED** |
+| Lead POST to API | **NOT TESTED** (no fake submissions) |
+
+### Note
+
+Home currently shows JK Nagar cards in both **Developments** and **Flagship Layout** sections (shared `JkNagarPhaseCard`). Consider consolidating in a future pass if duplication feels heavy.
+
+**Git / deploy:** Per task — **no commit, push, or deploy** for §9.
+
+---
+
+## 10. SEO & digital marketing (2026-10-14, local — not deployed)
+
+### Approach
+
+| Site | Domain | Shared helpers |
+|------|--------|----------------|
+| Real estate | `jkbalaji.in` | `apps/real-estate-web/src/lib/seo/metadata.ts`, `json-ld.ts` |
+| Jewellery | `cheyyarbalaji.com` | `apps/jewellery-web/src/lib/seo/metadata.ts`, `json-ld.ts` |
+
+- Next.js **Metadata API**: `metadataBase`, title **template**, per-route `reStaticMetadata` / `jwStaticMetadata`, dynamic `generateMetadata` for properties & collections.
+- Removed unverified **DTCP-approved** wording from default RE meta; no fake reviews/ratings/offers in schema.
+- **OG/Twitter**: JPEG hero assets (`realestate.jpg`, `jewels1.jpg`) instead of SVG-only previews where configured.
+- **Privacy/terms**: `noIndex: true`; omitted from RE/JW sitemaps.
+- **JSON-LD**: RE — `RealEstateAgent` + `WebSite` globally; `BreadcrumbList` on JK Nagar phase & property pages; `RealEstateListing` on published property detail. JW — `Organization`, `WebSite`, `JewelryStore` (hours from verified `SRI_BALAJI.hours`); `BreadcrumbList` + `Product` (no price) on collection pages.
+- **Sitemaps**: RE sitemap is **async** and appends `/public/properties` slugs when API reachable at build; JW lists static routes + collection IDs.
+- **robots.txt**: `allow: /`, `disallow: /api`, `host` + sitemap URL per domain.
+
+### Verification (local)
+
+| Check | Result |
+|-------|--------|
+| `typecheck:re`, `typecheck:jew`, `build:public` | **PASS** |
+| `https://jkbalaji.in/sitemap.xml` (via local route after build) | **PASS** — static routes; property URLs when API returns data at sitemap generation |
+| `robots.txt` (local) | **PASS** — host + sitemap |
+| Full HTML meta audit on every route | **PARTIAL** — dev server stale after production build; rely on Metadata API + build output |
+| Google Search Console / rich-result tests | **NOT RUN** — needs deploy + external tools |
+| Production live meta | **NOT UPDATED** — changes not deployed |
+
+### Recommended next steps (manual)
+
+1. Deploy RE + JW when ready; verify live `<title>`, canonical, OG tags on homepage and 2–3 inner URLs.
+2. Register **Google Search Console** properties for `jkbalaji.in` and `cheyyarbalaji.com`; submit sitemaps.
+3. Create/claim **Google Business Profile** for JK Balaji Real Estate and Sri Balaji Thangamaligai (Cheyyar) with verified address/phone/hours.
+4. Optional: [Rich Results Test](https://search.google.com/test/rich-results) on home, one JK Nagar phase, one property (if listed), JW collections/gold-rates.
+5. Add verified Phase 2/3 map URLs and amenity fields to `jk-nagar-phases.ts` when business confirms (helps local SEO).
+
+**Git / deploy:** **No commit, push, or deploy** for §10.
 
 ---
 

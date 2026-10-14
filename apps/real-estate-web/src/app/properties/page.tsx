@@ -1,16 +1,12 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
+import { reStaticMetadata } from '@/lib/seo/metadata';
 import { PropertyListingWithFilters } from '@/components/public/PropertyListingWithFilters';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
 import { ReAvailabilityNote, ReEnquireCtaBar, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { apiGet } from '@/lib/api';
 import { RE_ROUTES } from '@/lib/site-routes';
 
-export const metadata: Metadata = {
-  title: 'Available Properties & Plots | JK Balaji Real Estate',
-  description: 'Browse published residential plots and properties from JK Balaji Real Estate.',
-  alternates: { canonical: 'https://jkbalaji.in/properties' },
-};
+export const metadata = reStaticMetadata('properties');
 
 type Property = {
   id: string;

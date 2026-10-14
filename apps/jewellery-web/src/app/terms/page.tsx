@@ -1,4 +1,7 @@
 import { LegalPageChrome } from '@/components/site/LegalPageChrome';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
+
+export const metadata = jwStaticMetadata('terms');
 
 export default function TermsPage() {
   return (

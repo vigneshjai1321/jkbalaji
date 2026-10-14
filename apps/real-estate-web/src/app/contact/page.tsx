@@ -1,15 +1,11 @@
-import type { Metadata } from 'next';
 import { ContactLeadForm } from '@/components/ContactLeadForm';
+import { reStaticMetadata } from '@/lib/seo/metadata';
 import { MapEmbed } from '@/components/site/MapEmbed';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
 import { ReContactGuide, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { JK_BALAJI_RE } from '@/lib/real-estate-business';
 
-export const metadata: Metadata = {
-  title: 'Contact Us | JK Balaji Real Estate',
-  description: 'Enquire about plots, JK Nagar phases, and JK Balaji real estate projects.',
-  alternates: { canonical: 'https://jkbalaji.in/contact' },
-};
+export const metadata = reStaticMetadata('contact');
 
 export default function ContactPage() {
   return (

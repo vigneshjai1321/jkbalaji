@@ -1,16 +1,12 @@
-import type { Metadata } from 'next';
 import { SiteImage } from '@/components/site/SiteImage';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
 import { ReAboutServicesLinks, ReEnquireCtaBar, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { realEstateImages } from '@/lib/site-images';
 import { RE_ROUTES } from '@/lib/site-routes';
+import { reStaticMetadata } from '@/lib/seo/metadata';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'About Us | JK Balaji Real Estate',
-  description: 'JK Balaji Real Estate — verified plots and layouts around Cheyyar and Tamil Nadu.',
-  alternates: { canonical: 'https://jkbalaji.in/about' },
-};
+export const metadata = reStaticMetadata('about');
 
 export default function AboutPage() {
   return (

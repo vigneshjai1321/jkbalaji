@@ -1,15 +1,12 @@
-import type { Metadata } from 'next';
+
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwAboutTrustStrip, JwPageHeader, JwShowroomCtaBar } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SiteImage } from '@/components/site/SiteImage';
 import { SRI_BALAJI } from '@/lib/jewellery-business';
 import { jewelleryImages } from '@/lib/site-images';
 
-export const metadata: Metadata = {
-  title: 'About Us | Sri Balaji Thangamaligai',
-  description: `About ${SRI_BALAJI.name} — trusted jewellery showroom on Gandhi Road, Cheyyar.`,
-  alternates: { canonical: 'https://cheyyarbalaji.com/about' },
-};
+export const metadata = jwStaticMetadata('about');
 
 export default function AboutPage() {
   return (

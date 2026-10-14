@@ -1,11 +1,16 @@
 import type { MetadataRoute } from 'next';
+import { apiGet } from '@/lib/api';
+import { RE_SITE_ORIGIN } from '@/lib/seo/metadata';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+type Property = { slug: string; updatedAt?: string };
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
   const w = 'weekly' as const;
   const m = 'monthly' as const;
-  const base = 'https://jkbalaji.in';
-  const routes = [
+  const base = RE_SITE_ORIGIN;
+
+  const staticRoutes: MetadataRoute.Sitemap = [
     '',
     '/about',
     '/projects',
@@ -18,13 +23,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/gallery',
     '/contact',
     '/faq',
-    '/privacy',
-    '/terms',
-  ];
-  return routes.map((path) => ({
-    url: `${base}${path}`,
+  ].map((path) => ({
+    url: path ? `${base}${path}` : `${base}/`,
     lastModified,
     changeFrequency: path === '' || path.startsWith('/jk-nagar') ? w : m,
-    priority: path === '' ? 1 : path.startsWith('/jk-nagar') ? 0.9 : 0.7,
+    priority: path === '' ? 1 : path.startsWith('/jk-nagar') ? 0.9 : 0.75,
   }));
+
+  let propertyEntries: MetadataRoute.Sitemap = [];
+  try {
+    const properties = await apiGet<Property[]>('/public/properties');
+    propertyEntries = properties.map((p) => ({
+      url: `${base}/properties/${p.slug}`,
+      lastModified: p.updatedAt ? new Date(p.updatedAt) : lastModified,
+      changeFrequency: w,
+      priority: 0.8,
+    }));
+  } catch {
+    propertyEntries = [];
+  }
+
+  return [...staticRoutes, ...propertyEntries];
 }

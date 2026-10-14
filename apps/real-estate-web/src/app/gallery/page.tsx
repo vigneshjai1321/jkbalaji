@@ -1,14 +1,10 @@
-import type { Metadata } from 'next';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
+import { reStaticMetadata } from '@/lib/seo/metadata';
 import { RePageHeader, ReProjectsQuickLinks } from '@/components/realestate/inner/ReInnerBlocks';
 import { SiteImage } from '@/components/site/SiteImage';
 import { realEstateImages } from '@/lib/site-images';
 
-export const metadata: Metadata = {
-  title: 'Project Gallery | JK Balaji Real Estate',
-  description: 'Sample layout and development photography from JK Balaji Real Estate projects.',
-  alternates: { canonical: 'https://jkbalaji.in/gallery' },
-};
+export const metadata = reStaticMetadata('gallery');
 
 export default function GalleryPage() {
   return (

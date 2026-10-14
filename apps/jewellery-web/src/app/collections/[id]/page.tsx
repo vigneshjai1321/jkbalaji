@@ -4,18 +4,31 @@ import { notFound } from 'next/navigation';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwBreadcrumbs, JwCollectionLinks, JwShowroomCtaBar } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SiteImage } from '@/components/site/SiteImage';
+import { JsonLd } from '@/components/site/JsonLd';
 import { JEWELLERY_COLLECTIONS } from '@/lib/jewellery-collections';
 import { JW_ROUTES } from '@/lib/site-routes';
+import { buildJwPageMetadata, JW_SITE_ORIGIN } from '@/lib/seo/metadata';
+import { jwBreadcrumbJsonLd, jwCollectionProductJsonLd } from '@/lib/seo/json-ld';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const c = JEWELLERY_COLLECTIONS.find((x) => x.id === id);
-  if (!c) return { title: 'Collection | Sri Balaji Thangamaligai' };
-  return {
-    title: `${c.title} | Sri Balaji Thangamaligai`,
-    description: `Enquire about ${c.title.toLowerCase()} at our Cheyyar showroom.`,
-    alternates: { canonical: `https://cheyyarbalaji.com/collections/${id}` },
-  };
+  if (!c) {
+    return buildJwPageMetadata({
+      title: 'Collection Not Found',
+      description: 'This jewellery collection page is not available.',
+      path: `/collections/${id}`,
+      noIndex: true,
+    });
+  }
+  const examples = c.examples.slice(0, 3).join(', ');
+  return buildJwPageMetadata({
+    title: c.title,
+    description: `${c.title} at Sri Balaji Thangamaligai, Cheyyar — ${examples}. Visit Gandhi Road for current stock, weight, and pricing.`,
+    path: `/collections/${id}`,
+    keywords: [c.title, 'jewellery Cheyyar', 'Sri Balaji Thangamaligai'],
+    ogImage: `${JW_SITE_ORIGIN}${c.image.src}`,
+  });
 }
 
 export default async function CollectionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,8 +36,26 @@ export default async function CollectionDetailPage({ params }: { params: Promise
   const c = JEWELLERY_COLLECTIONS.find((x) => x.id === id);
   if (!c) notFound();
 
+  const url = `${JW_SITE_ORIGIN}/collections/${id}`;
+
   return (
     <JewelleryPageShell>
+      <JsonLd
+        data={[
+          jwBreadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Collections', path: '/collections' },
+            { name: c.title, path: `/collections/${id}` },
+          ]),
+          jwCollectionProductJsonLd({
+            name: c.title,
+            description: `Illustrative ${c.title.toLowerCase()} showcase — visit our Cheyyar showroom for current inventory.`,
+            url,
+            image: `${JW_SITE_ORIGIN}${c.image.src}`,
+            category: c.title,
+          }),
+        ]}
+      />
       <section className="jw-section-inner">
         <div className="jw-container max-w-3xl">
           <JwBreadcrumbs items={[{ href: JW_ROUTES.collections, label: 'Collections' }, { label: c.title }]} />

@@ -1,9 +1,11 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Cormorant_Garamond, Source_Sans_3 } from 'next/font/google';
 import '@/styles/jewellery.css';
-import { SRI_BALAJI } from '@/lib/jewellery-business';
+import { JsonLd } from '@/components/site/JsonLd';
 import { UnregisterPublicServiceWorker } from '@/components/UnregisterPublicServiceWorker';
+import { jwStaticMetadata, JW_DEFAULT_OG, JW_SITE_NAME, JW_SITE_ORIGIN, JW_STATIC_SEO } from '@/lib/seo/metadata';
+import { jwGlobalJsonLd } from '@/lib/seo/json-ld';
 
 const serif = Cormorant_Garamond({
   subsets: ['latin'],
@@ -19,42 +21,40 @@ const sans = Source_Sans_3({
   display: 'swap',
 });
 
-const title = `${SRI_BALAJI.name} | Gold & Diamond Jewellery Showroom, Cheyyar`;
-const description =
-  'Sri Balaji Thangamaligai — gold, silver, platinum and diamond jewellery in Cheyyar, Tiruvannamalai. GST-compliant showroom. Gold savings scheme enquiries welcome.';
+const rootMeta = jwStaticMetadata('home');
 
 export const metadata: Metadata = {
-  title,
-  description,
-  keywords: [
-    'Sri Balaji Thangamaligai',
-    'gold jewellery Cheyyar',
-    'jewellery showroom Cheyyar',
-    'silver articles Cheyyar',
-    'diamond jewellery Tamil Nadu',
-  ],
-  alternates: { canonical: SRI_BALAJI.url },
-  openGraph: {
-    title,
-    description,
-    url: SRI_BALAJI.url,
-    siteName: SRI_BALAJI.name,
-    locale: 'en_IN',
-    type: 'website',
-    images: [{ url: `${SRI_BALAJI.url}/icons/cheyyar.svg`, width: 512, height: 512, alt: SRI_BALAJI.name }],
+  metadataBase: new URL(JW_SITE_ORIGIN),
+  title: {
+    default: JW_STATIC_SEO.home.title,
+    template: `%s | ${JW_SITE_NAME}`,
   },
-  twitter: { card: 'summary_large_image', title, description },
+  description: rootMeta.description,
+  keywords: rootMeta.keywords,
+  alternates: { canonical: `${JW_SITE_ORIGIN}/` },
+  openGraph: rootMeta.openGraph,
+  twitter: rootMeta.twitter,
   robots: { index: true, follow: true },
   icons: {
     icon: [{ url: '/icons/cheyyar.svg', type: 'image/svg+xml' }],
     apple: [{ url: '/icons/cheyyar.svg' }],
   },
+  other: {
+    'og:image:secure_url': JW_DEFAULT_OG,
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#1c1917',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-IN">
       <body>
+        <JsonLd data={jwGlobalJsonLd()} />
         <div className={`jw-page ${serif.variable} ${sans.variable} font-[family-name:var(--font-jw-sans)]`}>{children}</div>
         <UnregisterPublicServiceWorker />
       </body>

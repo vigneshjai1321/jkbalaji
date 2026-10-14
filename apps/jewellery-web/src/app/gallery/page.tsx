@@ -1,14 +1,10 @@
-import type { Metadata } from 'next';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwPageHeader, JwShowroomCtaBar } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SiteImage } from '@/components/site/SiteImage';
 import { jewelleryImages } from '@/lib/site-images';
 
-export const metadata: Metadata = {
-  title: 'Gallery | Sri Balaji Thangamaligai',
-  description: 'Illustrative jewellery photography from Sri Balaji Thangamaligai.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/gallery' },
-};
+export const metadata = jwStaticMetadata('gallery');
 
 export default function GalleryPage() {
   return (

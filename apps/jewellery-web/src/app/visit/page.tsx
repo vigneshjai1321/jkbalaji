@@ -1,14 +1,10 @@
-import type { Metadata } from 'next';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { JewelleryMap } from '@/components/jewellery/JewelleryMap';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwPageHeader } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SRI_BALAJI } from '@/lib/jewellery-business';
 
-export const metadata: Metadata = {
-  title: 'Visit Our Showroom | Sri Balaji Thangamaligai',
-  description: 'Showroom location, hours, and directions — Gandhi Road, Cheyyar.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/visit' },
-};
+export const metadata = jwStaticMetadata('visit');
 
 export default function VisitPage() {
   return (

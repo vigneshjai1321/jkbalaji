@@ -1,13 +1,9 @@
-import type { Metadata } from 'next';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { FaqSection } from '@/components/site/FaqSection';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwFaqContactCta } from '@/components/jewellery/inner/JwInnerBlocks';
 
-export const metadata: Metadata = {
-  title: 'FAQs | Sri Balaji Thangamaligai',
-  description: 'Common questions about visiting our Cheyyar jewellery showroom.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/faq' },
-};
+export const metadata = jwStaticMetadata('faq');
 
 export default function FaqPage() {
   return (

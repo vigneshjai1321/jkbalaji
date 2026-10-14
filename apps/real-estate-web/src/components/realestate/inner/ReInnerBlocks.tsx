@@ -149,7 +149,7 @@ export function ReAboutServicesLinks() {
     <ReInnerBand>
       <h2 className="text-base font-semibold text-slate-900">What we help with</h2>
       <ul className="mt-2 text-sm text-slate-600 space-y-1 list-disc pl-5 max-w-xl">
-        <li>Published layouts and JK Nagar phases (Phase 3 register-interest only)</li>
+        <li>Published layouts and JK Nagar phases (all phases shown as ongoing on the public site)</li>
         <li>Guided site visits and documentation support through registration</li>
       </ul>
       <Link href={RE_ROUTES.projects} className="mt-3 inline-block text-sm font-semibold text-emerald-800 hover:underline">

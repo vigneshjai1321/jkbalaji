@@ -1,16 +1,12 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwPageHeader, JwShowroomCtaBar } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SiteImage } from '@/components/site/SiteImage';
 import { JEWELLERY_COLLECTIONS } from '@/lib/jewellery-collections';
 import { JW_ROUTES } from '@/lib/site-routes';
 
-export const metadata: Metadata = {
-  title: 'Collections | Sri Balaji Thangamaligai',
-  description: 'Gold, silver, platinum and diamond jewellery collections at our Cheyyar showroom.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/collections' },
-};
+export const metadata = jwStaticMetadata('collections');
 
 export default function CollectionsPage() {
   return (

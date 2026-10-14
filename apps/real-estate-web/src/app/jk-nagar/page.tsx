@@ -1,15 +1,11 @@
-import type { Metadata } from 'next';
 import { JkNagarPhasesSection } from '@/components/realestate/JkNagarPhasesSection';
+import { reStaticMetadata } from '@/lib/seo/metadata';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
 import { RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { ContactLeadForm } from '@/components/ContactLeadForm';
 import { MapEmbed } from '@/components/site/MapEmbed';
 
-export const metadata: Metadata = {
-  title: 'JK Nagar Phases | JK Balaji Real Estate',
-  description: 'JK Nagar Phase 1, Phase 2, and Phase 3 (register interest). Plot enquiries for Phase 1 and 2.',
-  alternates: { canonical: 'https://jkbalaji.in/jk-nagar' },
-};
+export const metadata = reStaticMetadata('jkNagar');
 
 export default function JkNagarPage() {
   return (

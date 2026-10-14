@@ -1,16 +1,12 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { GoldSchemeEnquiry } from '@/components/jewellery/GoldSchemeEnquiry';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwPageHeader, JwSchemeProcessNote } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SRI_BALAJI } from '@/lib/jewellery-business';
 import { JW_ROUTES } from '@/lib/site-routes';
 
-export const metadata: Metadata = {
-  title: 'Gold Savings Scheme | Sri Balaji Thangamaligai',
-  description: 'Plan your jewellery purchase with our gold savings scheme — enquire from ₹5,000 to ₹1,00,000.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/gold-schemes' },
-};
+export const metadata = jwStaticMetadata('goldSchemes');
 
 export default function GoldSchemesPage() {
   return (

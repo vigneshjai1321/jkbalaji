@@ -1,13 +1,9 @@
-import type { Metadata } from 'next';
 import { MarketRatesBanner } from '@/components/jewellery/MarketRatesBanner';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwPageHeader, JwRatesExplainer } from '@/components/jewellery/inner/JwInnerBlocks';
 
-export const metadata: Metadata = {
-  title: 'Gold Rates | Sri Balaji Thangamaligai',
-  description: 'Live market reference rates for gold and silver when configured on our server.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/gold-rates' },
-};
+export const metadata = jwStaticMetadata('goldRates');
 
 export default function GoldRatesPage() {
   return (

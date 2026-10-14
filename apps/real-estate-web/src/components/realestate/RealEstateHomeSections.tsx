@@ -97,8 +97,8 @@ export function SiteVisitSection() {
           <p className="text-emerald-300/90 text-xs font-semibold tracking-wide uppercase">Site visit</p>
           <h2 className="re-heading mt-2 text-white">Book a site visit or call back</h2>
           <p className="mt-3 text-emerald-100/90 text-sm leading-relaxed">
-            Tell us which project or phase you are interested in. We confirm availability before scheduling — Phase 3 remains
-            register-interest only.
+            Tell us which project or phase you are interested in. We confirm availability before scheduling — all JK Nagar phases accept
+            enquiries; plot availability is confirmed with our team.
           </p>
           <a
             href={`https://wa.me/${JK_BALAJI_RE.whatsappNumber}?text=${encodeURIComponent('Site visit enquiry — JK Balaji Real Estate')}`}

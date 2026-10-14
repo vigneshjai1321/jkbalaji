@@ -1,14 +1,10 @@
-import type { Metadata } from 'next';
 import { ContactLeadForm } from '@/components/ContactLeadForm';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwPageHeader } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SRI_BALAJI } from '@/lib/jewellery-business';
 
-export const metadata: Metadata = {
-  title: 'Contact Us | Sri Balaji Thangamaligai',
-  description: 'Contact Sri Balaji Thangamaligai jewellery showroom in Cheyyar.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/contact' },
-};
+export const metadata = jwStaticMetadata('contact');
 
 export default function ContactPage() {
   return (

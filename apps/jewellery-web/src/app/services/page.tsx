@@ -1,12 +1,8 @@
-import type { Metadata } from 'next';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { JwPageHeader, JwShowroomCtaBar } from '@/components/jewellery/inner/JwInnerBlocks';
 
-export const metadata: Metadata = {
-  title: 'Services | Sri Balaji Thangamaligai',
-  description: 'Custom design, buyback, and in-store collection assistance at our Cheyyar jewellery showroom.',
-  alternates: { canonical: 'https://cheyyarbalaji.com/services' },
-};
+export const metadata = jwStaticMetadata('services');
 
 const SERVICES = [
   { title: 'Custom jewellery design', desc: 'Share your ideas — enquire in-store for design consultations.' },

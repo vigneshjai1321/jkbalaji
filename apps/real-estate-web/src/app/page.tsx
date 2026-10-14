@@ -3,6 +3,7 @@ import { RealEstateHero } from '@/components/realestate/RealEstateHero';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
 import { PropertyShowcaseCard } from '@/components/public/PropertyShowcaseCard';
 import { InvestmentCalculator } from '@/components/public/InvestmentCalculator';
+import { PropertyEnquirySection } from '@/components/realestate/PropertyEnquirySection';
 import {
   BuyingProcessSection,
   FeaturedProjectsSection,
@@ -12,11 +13,12 @@ import {
   SiteVisitSection,
   WhyChooseSection,
 } from '@/components/realestate/RealEstateHomeSections';
-import { JsonLd } from '@/components/site/JsonLd';
 import { resolvePublicAssetUrl } from '@/lib/site-asset-url';
 import { apiGet } from '@/lib/api';
-import { JK_BALAJI_RE } from '@/lib/real-estate-business';
 import { RE_ROUTES } from '@/lib/site-routes';
+import { reStaticMetadata } from '@/lib/seo/metadata';
+
+export const metadata = reStaticMetadata('home');
 
 type Property = {
   id: string;
@@ -53,24 +55,13 @@ export default async function RealEstateHome() {
   }
   const featured = properties.slice(0, 3);
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'RealEstateAgent',
-    name: 'JK Balaji Real Estate',
-    url: 'https://jkbalaji.in/',
-    areaServed: 'Tamil Nadu, India',
-    email: JK_BALAJI_RE.email,
-    telephone: JK_BALAJI_RE.phoneE164,
-  };
-
   return (
     <RealEstatePageShell>
-      <JsonLd data={jsonLd} />
       <RealEstateHero />
       <section className="re-section bg-white">
         <div className="re-container grid md:grid-cols-3 gap-6">
           {[
-            { title: 'JK Nagar', desc: 'Three planned phases — plot enquiry for Phase 1 & 2.', href: RE_ROUTES.jkNagar },
+            { title: 'JK Nagar', desc: 'Three ongoing phases — plot enquiries for all phases.', href: RE_ROUTES.jkNagar },
             { title: 'Projects', desc: 'Published developments from our catalogue.', href: RE_ROUTES.projects },
             { title: 'Contact', desc: 'Site visits, documentation, and registration support.', href: RE_ROUTES.contact },
           ].map((card) => (
@@ -90,30 +81,20 @@ export default async function RealEstateHome() {
       <FeaturedProjectsSection projects={projects} />
       <JkNagarPhasesSection />
 
-      <section id="properties" className="re-section">
-        <div className="re-container">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div>
-              <p className="re-eyebrow">Portfolio</p>
-              <h2 className="re-heading mt-2">Available plots & properties</h2>
-            </div>
-            <Link href={RE_ROUTES.properties} className="text-sm font-semibold text-emerald-800 hover:underline">
-              View all properties →
-            </Link>
-          </div>
-          {featured.length === 0 ? (
-            <p className="mt-8 text-slate-600 max-w-xl">
-              No individual listings are published right now. Explore{' '}
-              <Link href={RE_ROUTES.jkNagar} className="text-emerald-800 font-medium hover:underline">
-                JK Nagar
-              </Link>{' '}
-              or{' '}
-              <Link href={RE_ROUTES.contact} className="text-emerald-800 font-medium hover:underline">
-                contact our team
+      <PropertyEnquirySection />
+
+      {featured.length > 0 ? (
+        <section id="properties" className="re-section bg-slate-50/80">
+          <div className="re-container">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div>
+                <p className="re-eyebrow">Published listings</p>
+                <h2 className="re-heading mt-2">Available plots &amp; properties</h2>
+              </div>
+              <Link href={RE_ROUTES.properties} className="text-sm font-semibold text-emerald-800 hover:underline">
+                View all properties →
               </Link>
-              .
-            </p>
-          ) : (
+            </div>
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {featured.map((p) => {
                 const img = p.images?.[0]?.trim();
@@ -129,9 +110,9 @@ export default async function RealEstateHome() {
                 );
               })}
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      ) : null}
 
       <WhyChooseSection />
       <BuyingProcessSection />

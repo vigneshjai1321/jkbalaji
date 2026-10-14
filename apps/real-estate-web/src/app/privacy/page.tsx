@@ -1,4 +1,7 @@
 import { LegalPageChrome } from '@/components/site/LegalPageChrome';
+import { reStaticMetadata } from '@/lib/seo/metadata';
+
+export const metadata = reStaticMetadata('privacy');
 
 export default function PrivacyPage() {
   return (

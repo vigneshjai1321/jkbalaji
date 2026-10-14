@@ -1,39 +1,45 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import '@/styles/globals.css';
+import { JsonLd } from '@/components/site/JsonLd';
 import { UnregisterPublicServiceWorker } from '@/components/UnregisterPublicServiceWorker';
+import { RE_SITE_ORIGIN, RE_DEFAULT_OG, RE_SITE_NAME, RE_STATIC_SEO, reStaticMetadata } from '@/lib/seo/metadata';
+import { reGlobalJsonLd } from '@/lib/seo/json-ld';
 
-const title = 'JK Balaji Real Estate | Premium Plots & Villas in Tamil Nadu';
-const description =
-  'Premium real estate brand across Tamil Nadu — luxury properties, DTCP-approved plots, villas, commercial spaces, and investment opportunities. Enquire at jkbalaji.in.';
-const url = 'https://jkbalaji.in/';
+const rootMeta = reStaticMetadata('home');
 
 export const metadata: Metadata = {
-  title,
-  description,
-  keywords: ['real estate Tamil Nadu', 'plots Cheyyar', 'DTCP approved layouts', 'JK Balaji', 'property investment'],
-  alternates: { canonical: url },
-  openGraph: {
-    title,
-    description,
-    url,
-    siteName: 'JK Balaji Real Estate',
-    locale: 'en_IN',
-    type: 'website',
-    images: [{ url: 'https://jkbalaji.in/icons/jkbalaji.svg', width: 512, height: 512, alt: 'JK Balaji Real Estate' }],
+  metadataBase: new URL(RE_SITE_ORIGIN),
+  title: {
+    default: RE_STATIC_SEO.home.title,
+    template: `%s | ${RE_SITE_NAME}`,
   },
-  twitter: { card: 'summary_large_image', title, description },
+  description: rootMeta.description,
+  keywords: rootMeta.keywords,
+  alternates: { canonical: `${RE_SITE_ORIGIN}/` },
+  openGraph: rootMeta.openGraph,
+  twitter: rootMeta.twitter,
   robots: { index: true, follow: true },
   icons: {
     icon: [{ url: '/icons/jkbalaji.svg', type: 'image/svg+xml' }],
     apple: [{ url: '/icons/jkbalaji.svg' }],
   },
+  other: {
+    'og:image:secure_url': RE_DEFAULT_OG,
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#064e3b',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-IN">
       <body>
+        <JsonLd data={reGlobalJsonLd()} />
         {children}
         <UnregisterPublicServiceWorker />
       </body>

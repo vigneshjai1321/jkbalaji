@@ -1,14 +1,10 @@
-import type { Metadata } from 'next';
 import { MapEmbed } from '@/components/site/MapEmbed';
+import { reStaticMetadata } from '@/lib/seo/metadata';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
 import { ReLocationContactStrip, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { JK_BALAJI_RE } from '@/lib/real-estate-business';
 
-export const metadata: Metadata = {
-  title: 'Location & Map | JK Balaji Real Estate',
-  description: 'JK Balaji Real Estate office location in Cheyyar, Tamil Nadu.',
-  alternates: { canonical: 'https://jkbalaji.in/location' },
-};
+export const metadata = reStaticMetadata('location');
 
 export default function LocationPage() {
   return (

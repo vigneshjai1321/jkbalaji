@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { JewelleryHero } from '@/components/jewellery/JewelleryHero';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
 import { MarketRatesBanner } from '@/components/jewellery/MarketRatesBanner';
-import { JsonLd } from '@/components/site/JsonLd';
-import { SRI_BALAJI } from '@/lib/jewellery-business';
+import { jwStaticMetadata } from '@/lib/seo/metadata';
+
+export const metadata = jwStaticMetadata('home');
 import {
   CollectionsPreview,
   GoldSchemePromo,
@@ -14,26 +15,8 @@ import {
 import { JW_ROUTES } from '@/lib/site-routes';
 
 export default function JewelleryHome() {
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'JewelryStore',
-    name: SRI_BALAJI.name,
-    url: SRI_BALAJI.url,
-    telephone: SRI_BALAJI.phoneE164,
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: 'No. 49/3, Gandhi Road',
-      addressLocality: 'Cheyyar',
-      addressRegion: 'Tamil Nadu',
-      postalCode: '604407',
-      addressCountry: 'IN',
-    },
-    description: SRI_BALAJI.tagline,
-  };
-
   return (
     <JewelleryPageShell>
-      <JsonLd data={jsonLd} />
       <JewelleryHero />
       <MarketRatesBanner />
       <section className="jw-section bg-white">
