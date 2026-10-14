@@ -175,6 +175,8 @@ export SKIP_DB_SEED=1
 $(if ($SkipDbMigrate) { 'export SKIP_DB_MIGRATE=1' })
 bash deployment/scripts/vps-install.sh
 "@
+  $prevEap = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
   $remoteInstallOutput = & {
     $sshArgs = @("-p", "$Port")
     if (Test-Path $KeyPath) { $sshArgs = @("-i", $KeyPath) + $sshArgs }
@@ -182,6 +184,7 @@ bash deployment/scripts/vps-install.sh
     & ssh @sshArgs 2>&1 | Out-String
   }
   $installExit = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
   if ($installExit -ne 0) {
     throw "Remote vps-install.sh failed (exit $installExit). See DEPLOYMENT_REPORT.md"
   }
@@ -209,13 +212,16 @@ fi
 
   Write-Host "7) Post-deploy verification"
   $verifyCmd = "export ROOT='$RemoteRoot' BUILD_TARGETS='$BuildTargets'; bash $RemoteRoot/deployment/scripts/verify-deploy.sh"
+  $ErrorActionPreference = 'Continue'
   $verifyOutput = & {
     $sshArgs = @("-p", "$Port")
     if (Test-Path $KeyPath) { $sshArgs = @("-i", $KeyPath) + $sshArgs }
     $sshArgs += "${User}@${HostAddr}", $verifyCmd
     & ssh @sshArgs 2>&1 | Out-String
   }
-  if ($LASTEXITCODE -ne 0) {
+  $verifyExit = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
+  if ($verifyExit -ne 0) {
     throw "verify-deploy.sh failed (exit $LASTEXITCODE)"
   }
 
