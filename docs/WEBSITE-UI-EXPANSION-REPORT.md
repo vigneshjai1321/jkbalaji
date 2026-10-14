@@ -1,8 +1,8 @@
 # Website UI expansion — final status
 
 **Last updated:** 2026-10-14  
-**Latest commit:** _(pending deploy commit)_ — heroes, RE “Our Projects” restore, contact/branding  
-**GitHub `main`:** push verified after commit (see §8)
+**Latest commit:** `6b52362` — heroes, RE “Our Projects” restore, contact/branding  
+**GitHub `main`:** `6b52362` (HTTPS push verified)
 
 ---
 
@@ -38,7 +38,17 @@
 | RE `/` — hero readable, footer email/phone/credit | **PASS** |
 | JW `/` — light hero, footer email/phone/credit | **PASS** |
 | JW gold rates banner (local, no API) | “Rate unavailable” — expected without local API env |
-| Production jkbalaji.in / cheyyarbalaji.com | Verify after deploy (§8 deploy row) |
+| Production [jkbalaji.in](https://jkbalaji.in/) | **PASS** — “Our Projects” + Flagship Layout; `tmlcheyyar@gmail.com`; footer credit only |
+| Production [cheyyarbalaji.com](https://cheyyarbalaji.com/) | **PASS** — light hero; KJPL rates; contact + footer credit |
+
+### Git & deploy (this release)
+
+| Step | Result |
+|------|--------|
+| Commit | **PASS** — `6b52362` |
+| HTTPS push | **PASS** |
+| Deploy | **PASS** — `deploy.ps1 -BuildTargets re,jew -SkipDbMigrate`; PM2 `jkbalaji-realestate`, `jkbalaji-jewellery` online |
+| Full tablet/mobile matrix | **NOT TESTED** — desktop browser + production home pages |
 
 ---
 
