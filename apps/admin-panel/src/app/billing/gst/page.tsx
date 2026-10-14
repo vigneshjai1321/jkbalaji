@@ -4,14 +4,30 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminFetch, adminApiBase } from '@/lib/admin-api';
+import { clsx } from 'clsx';
 import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
 import { AdminBtnSecondary } from '@/components/admin/AdminForm';
+import {
+  billingPageChromeClass,
+  useBillingDateClass,
+  useBillingLinkClass,
+  useBillingMutedTextClass,
+  useBillingSelectClass,
+  useBillingStatCardClass,
+} from '@/components/billing/billing-theme';
+import { useAdminTheme } from '@/components/admin/AdminShell';
 import type { GstReport } from '@/lib/billing-types';
 
 export default function GstReportsPage() {
   const [preset, setPreset] = useState('month');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const select = useBillingSelectClass();
+  const dateInput = useBillingDateClass();
+  const linkClass = useBillingLinkClass();
+  const muted = useBillingMutedTextClass();
+  const statCard = useBillingStatCardClass();
+  const dark = useAdminTheme() === 'dark';
 
   const params = useMemo(() => {
     const q = new URLSearchParams();
@@ -46,28 +62,39 @@ export default function GstReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={billingPageChromeClass()}>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/billing" className="text-sm text-emerald-400 hover:underline">
+        <Link href="/billing" className={clsx('text-sm', linkClass)}>
           ← Billing
         </Link>
-        <h1 className="text-xl font-bold">GST & Tax Reports</h1>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-inherit">GST & Tax Reports</h1>
       </div>
-      <p className="text-sm text-amber-200/80 max-w-3xl">{report.data?.disclaimer ?? 'Internal summaries from issued invoices only.'}</p>
+      <p className={clsx('text-sm max-w-3xl', dark ? 'text-amber-200/80' : 'text-amber-900/80')}>
+        {report.data?.disclaimer ?? 'Internal summaries from issued invoices only.'}
+      </p>
 
       <AdminPanel title="Period">
-        <div className="p-4 flex flex-wrap gap-3 items-end">
-          <select className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm" value={preset} onChange={(e) => setPreset(e.target.value)}>
+        <div className="p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-end">
+          <label className="flex flex-col gap-1 min-w-[12rem] flex-1 sm:flex-none">
+            <span className={clsx('text-xs font-medium', muted)}>Report period</span>
+            <select className={select} value={preset} onChange={(e) => setPreset(e.target.value)}>
             <option value="today">Today</option>
             <option value="month">This month</option>
             <option value="prev_month">Previous month</option>
             <option value="fy">Financial year (Apr–Mar)</option>
             <option value="custom">Custom range</option>
-          </select>
+            </select>
+          </label>
           {preset === 'custom' ? (
             <>
-              <input type="date" className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
-              <input type="date" className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm" value={to} onChange={(e) => setTo(e.target.value)} />
+              <label className="flex flex-col gap-1">
+                <span className={clsx('text-xs font-medium', muted)}>From</span>
+                <input type="date" className={dateInput} value={from} onChange={(e) => setFrom(e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className={clsx('text-xs font-medium', muted)}>To</span>
+                <input type="date" className={dateInput} value={to} onChange={(e) => setTo(e.target.value)} />
+              </label>
             </>
           ) : null}
           <AdminBtnSecondary type="button" onClick={() => download('csv')}>
@@ -84,15 +111,15 @@ export default function GstReportsPage() {
       {t ? (
         <>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Stat label="GST collected" value={`₹${t.gstCollectedInr.toLocaleString('en-IN')}`} />
-            <Stat label="Taxable sales" value={`₹${t.taxableSalesInr.toLocaleString('en-IN')}`} />
-            <Stat label="GST invoices" value={String(t.gstInvoiceCount)} />
-            <Stat label="Non-GST invoices" value={String(t.nonGstInvoiceCount)} />
+            <Stat label="GST collected" value={`₹${t.gstCollectedInr.toLocaleString('en-IN')}`} className={statCard} muted={muted} />
+            <Stat label="Taxable sales" value={`₹${t.taxableSalesInr.toLocaleString('en-IN')}`} className={statCard} muted={muted} />
+            <Stat label="GST invoices" value={String(t.gstInvoiceCount)} className={statCard} muted={muted} />
+            <Stat label="Non-GST invoices" value={String(t.nonGstInvoiceCount)} className={statCard} muted={muted} />
           </div>
           <div className="grid sm:grid-cols-3 gap-4 text-sm">
-            <Stat label="CGST" value={`₹${t.cgstInr.toLocaleString('en-IN')}`} />
-            <Stat label="SGST" value={`₹${t.sgstInr.toLocaleString('en-IN')}`} />
-            <Stat label="IGST" value={`₹${t.igstInr.toLocaleString('en-IN')}`} />
+            <Stat label="CGST" value={`₹${t.cgstInr.toLocaleString('en-IN')}`} className={statCard} muted={muted} />
+            <Stat label="SGST" value={`₹${t.sgstInr.toLocaleString('en-IN')}`} className={statCard} muted={muted} />
+            <Stat label="IGST" value={`₹${t.igstInr.toLocaleString('en-IN')}`} className={statCard} muted={muted} />
           </div>
 
           <AdminPanel title="Monthly summary">
@@ -126,11 +153,11 @@ export default function GstReportsPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, className, muted }: { label: string; value: string; className: string; muted: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="text-lg font-bold mt-1 tabular-nums">{value}</p>
+    <div className={className}>
+      <p className={clsx('text-xs uppercase tracking-wide', muted)}>{label}</p>
+      <p className="text-lg font-bold mt-1 tabular-nums text-stone-900 dark:text-inherit">{value}</p>
     </div>
   );
 }

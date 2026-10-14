@@ -5,7 +5,10 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
 import { AdminPanel } from '@/components/admin/AdminPanel';
+import { clsx } from 'clsx';
 import { AdminBtnPrimary, AdminBtnSecondary, useAdminInputClass } from '@/components/admin/AdminForm';
+import { billingPageChromeClass, useBillingLinkClass } from '@/components/billing/billing-theme';
+import { useAdminTheme } from '@/components/admin/AdminShell';
 import { InvoiceForm } from '@/components/billing/InvoiceForm';
 import { InvoicePdfLink } from '@/components/admin/InvoicePdfLink';
 import { useRouter } from 'next/navigation';
@@ -41,6 +44,8 @@ export default function InvoiceDetailPage() {
   const qc = useQueryClient();
   const router = useRouter();
   const input = useAdminInputClass();
+  const linkClass = useBillingLinkClass();
+  const dark = useAdminTheme() === 'dark';
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('Cash');
   const [cancelReason, setCancelReason] = useState('');
@@ -88,13 +93,20 @@ export default function InvoiceDetailPage() {
   const balance = Math.max(0, Number(data.totalInr) - Number(data.amountPaidInr));
 
   return (
-    <div className="space-y-6">
+    <div className={billingPageChromeClass()}>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/billing" className="text-sm text-emerald-400 hover:underline">
+        <Link href="/billing" className={clsx('text-sm', linkClass)}>
           ← Billing
         </Link>
-        <h1 className="text-xl font-bold">{data.invoiceNo}</h1>
-        <span className="text-xs uppercase tracking-wide px-2 py-1 rounded bg-white/10">{data.status.replace(/_/g, ' ')}</span>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-inherit">{data.invoiceNo}</h1>
+        <span
+          className={clsx(
+            'text-xs uppercase tracking-wide px-2.5 py-1 rounded-full border font-medium',
+            dark ? 'bg-white/10 border-white/10' : 'bg-amber-50 border-amber-200/80 text-amber-950',
+          )}
+        >
+          {data.status.replace(/_/g, ' ')}
+        </span>
       </div>
 
       <div className="flex flex-wrap gap-2">

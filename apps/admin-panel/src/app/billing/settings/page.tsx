@@ -4,14 +4,18 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
 import { AdminPanel } from '@/components/admin/AdminPanel';
-import { AdminBtnPrimary, useAdminInputClass } from '@/components/admin/AdminForm';
+import { AdminBtnPrimary } from '@/components/admin/AdminForm';
+import { billingPageChromeClass, useBillingInputClass, useBillingLinkClass, useBillingMutedTextClass } from '@/components/billing/billing-theme';
+import { clsx } from 'clsx';
 import type { SellerProfile } from '@/lib/billing-types';
 import { BILLING_SUPPORT_EMAIL } from '@/lib/billing-types';
 import { gstinFormatHint } from '@/lib/gstin-format';
 import { useEffect, useState } from 'react';
 
 export default function BillingSettingsPage() {
-  const input = useAdminInputClass();
+  const input = useBillingInputClass();
+  const linkClass = useBillingLinkClass();
+  const muted = useBillingMutedTextClass();
   const qc = useQueryClient();
   const [form, setForm] = useState<SellerProfile | null>(null);
   const [taxRatesText, setTaxRatesText] = useState('');
@@ -46,16 +50,16 @@ export default function BillingSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={billingPageChromeClass()}>
       <div className="flex items-center gap-3">
-        <Link href="/billing" className="text-sm text-emerald-400 hover:underline">
+        <Link href="/billing" className={clsx('text-sm', linkClass)}>
           ← Billing
         </Link>
-        <h1 className="text-xl font-bold">Billing settings</h1>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-inherit">Billing settings</h1>
       </div>
-      <p className="text-sm text-slate-500 max-w-2xl">
+      <p className={clsx('text-sm max-w-2xl', muted)}>
         Enter the <strong>actual invoice issuer&apos;s</strong> legal details below. These appear on PDFs and printouts. Billing software support:{' '}
-        <a href={`mailto:${BILLING_SUPPORT_EMAIL}`} className="text-emerald-400 hover:underline">
+        <a href={`mailto:${BILLING_SUPPORT_EMAIL}`} className={linkClass}>
           {BILLING_SUPPORT_EMAIL}
         </a>{' '}
         (JK Balaji — not shown as the seller on invoices).

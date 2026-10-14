@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminBtnSecondary, useAdminInputClass } from '@/components/admin/AdminForm';
+import { AdminBtnSecondary } from '@/components/admin/AdminForm';
+import { useBillingInputClass } from '@/components/billing/billing-theme';
 import { useAdminTheme } from '@/components/admin/AdminShell';
 
 export type BillingCustomer = {
@@ -58,7 +59,7 @@ function CustomerFormFields({
 }
 
 export function CustomerPicker({ value, onChange }: Props) {
-  const input = useAdminInputClass();
+  const input = useBillingInputClass();
   const dark = useAdminTheme() === 'dark';
   const qc = useQueryClient();
   const [query, setQuery] = useState('');

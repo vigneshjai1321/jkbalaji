@@ -3,13 +3,25 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { clsx } from 'clsx';
 import { adminFetch } from '@/lib/admin-api';
 import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
-import { AdminBtnPrimary } from '@/components/admin/AdminForm';
+import { AdminBtnPrimary, AdminBtnSecondary } from '@/components/admin/AdminForm';
 import { InvoicePdfLink } from '@/components/admin/InvoicePdfLink';
+import {
+  billingPageChromeClass,
+  useBillingDateClass,
+  useBillingFilterBarClass,
+  useBillingInputClass,
+  useBillingLinkClass,
+  useBillingMutedTextClass,
+  useBillingPagerBtnClass,
+  useBillingSelectClass,
+  useBillingStatCardClass,
+} from '@/components/billing/billing-theme';
+import { useAdminTheme } from '@/components/admin/AdminShell';
 import type { BillingSummary, InvoiceListItem, InvoiceStatus } from '@/lib/billing-types';
 import { BILLING_SUPPORT_EMAIL, INVOICE_STATUSES } from '@/lib/billing-types';
-import { AdminBtnSecondary } from '@/components/admin/AdminForm';
 
 type ListResp = { items: InvoiceListItem[]; total: number; page: number; limit: number };
 
@@ -21,6 +33,18 @@ export default function AdminBillingPage() {
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
   const [gstFilter, setGstFilter] = useState<'' | 'gst' | 'non-gst'>('');
+
+  const input = useBillingInputClass();
+  const select = useBillingSelectClass();
+  const dateInput = useBillingDateClass();
+  const filterBar = useBillingFilterBarClass();
+  const statCard = useBillingStatCardClass();
+  const linkClass = useBillingLinkClass();
+  const muted = useBillingMutedTextClass();
+  const pagerBtn = useBillingPagerBtnClass();
+  const dark = useAdminTheme() === 'dark';
+  const tableActionMuted = dark ? 'text-slate-300' : 'text-stone-600';
+  const tableActionPrint = dark ? 'text-slate-400' : 'text-stone-500';
 
   const customers = useQuery({
     queryKey: ['billing-customers-list'],
@@ -54,13 +78,13 @@ export default function AdminBillingPage() {
   const loading = invoices.isLoading;
 
   return (
-    <div className="space-y-6">
+    <div className={billingPageChromeClass()}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Billing Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-inherit">Billing Dashboard</h1>
+          <p className={clsx('text-sm mt-1', muted)}>
             Invoicing, GST reports, and PDF export. Support:{' '}
-            <a href={`mailto:${BILLING_SUPPORT_EMAIL}`} className="text-emerald-400 hover:underline">
+            <a href={`mailto:${BILLING_SUPPORT_EMAIL}`} className={linkClass}>
               {BILLING_SUPPORT_EMAIL}
             </a>
           </p>
@@ -73,16 +97,16 @@ export default function AdminBillingPage() {
             <AdminBtnSecondary>Billing settings</AdminBtnSecondary>
           </Link>
           <Link href="/billing/invoices/new">
-            <AdminBtnPrimary>Create Invoice</AdminBtnPrimary>
+            <AdminBtnPrimary className={!dark ? '!bg-amber-800 hover:!bg-amber-900' : undefined}>Create Invoice</AdminBtnPrimary>
           </Link>
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat label="Total invoices" value={String(summary.data?.invoiceCount ?? '—')} />
-        <Stat label="Total invoiced" value={`₹${(summary.data?.totalInvoiced ?? 0).toLocaleString('en-IN')}`} />
-        <Stat label="Outstanding" value={`₹${(summary.data?.outstanding ?? 0).toLocaleString('en-IN')}`} />
-        <Stat label="Amount received" value={`₹${(summary.data?.paymentsReceived ?? 0).toLocaleString('en-IN')}`} />
+        <Stat label="Total invoices" value={String(summary.data?.invoiceCount ?? '—')} className={statCard} muted={muted} />
+        <Stat label="Total invoiced" value={`₹${(summary.data?.totalInvoiced ?? 0).toLocaleString('en-IN')}`} className={statCard} muted={muted} />
+        <Stat label="Outstanding" value={`₹${(summary.data?.outstanding ?? 0).toLocaleString('en-IN')}`} className={statCard} muted={muted} />
+        <Stat label="Amount received" value={`₹${(summary.data?.paymentsReceived ?? 0).toLocaleString('en-IN')}`} className={statCard} muted={muted} />
       </div>
 
       {(summary.data?.recent?.length ?? 0) > 0 ? (
@@ -95,7 +119,7 @@ export default function AdminBillingPage() {
               new Date(inv.invoiceDate).toLocaleDateString('en-IN'),
               inv.status.replace(/_/g, ' '),
               `₹${Number(inv.totalInr).toLocaleString('en-IN')}`,
-              <Link key={inv.id} href={`/billing/invoices/${inv.id}`} className="text-emerald-400 text-xs hover:underline">
+              <Link key={inv.id} href={`/billing/invoices/${inv.id}`} className={clsx(linkClass, 'text-xs')}>
                 View
               </Link>,
             ])}
@@ -104,81 +128,99 @@ export default function AdminBillingPage() {
       ) : null}
 
       <AdminPanel title="All invoices">
-        <div className="p-4 border-b border-white/5 flex flex-col lg:flex-row gap-3">
-          <input
-            className="flex-1 rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm"
-            placeholder="Search invoice #, customer, phone, or email…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
-          <select
-            className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm"
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value as InvoiceStatus | '');
-              setPage(1);
-            }}
-          >
-            <option value="">All statuses</option>
-            {INVOICE_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s.replace(/_/g, ' ')}
-              </option>
-            ))}
-          </select>
-          <select
-            className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm min-w-[10rem]"
-            value={customerId}
-            onChange={(e) => {
-              setCustomerId(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">All customers</option>
-            {(customers.data ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm"
-            value={gstFilter}
-            onChange={(e) => {
-              setGstFilter(e.target.value as '' | 'gst' | 'non-gst');
-              setPage(1);
-            }}
-          >
-            <option value="">GST & non-GST</option>
-            <option value="gst">GST invoices only</option>
-            <option value="non-gst">Non-GST only</option>
-          </select>
-          <input
-            type="date"
-            className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setPage(1);
-            }}
-            title="From date"
-          />
-          <input
-            type="date"
-            className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setPage(1);
-            }}
-            title="To date"
-          />
+        <div className={filterBar}>
+          <label className="lg:col-span-4 flex flex-col gap-1 min-w-0">
+            <span className={clsx('text-xs font-medium', muted)}>Search</span>
+            <input
+              className={input}
+              placeholder="Invoice #, customer, phone, or email…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label className="lg:col-span-2 flex flex-col gap-1 min-w-0">
+            <span className={clsx('text-xs font-medium', muted)}>Status</span>
+            <select
+              className={select}
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value as InvoiceStatus | '');
+                setPage(1);
+              }}
+            >
+              <option value="">All statuses</option>
+              {INVOICE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="lg:col-span-2 flex flex-col gap-1 min-w-0">
+            <span className={clsx('text-xs font-medium', muted)}>Customer</span>
+            <select
+              className={select}
+              value={customerId}
+              onChange={(e) => {
+                setCustomerId(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All customers</option>
+              {(customers.data ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="lg:col-span-2 flex flex-col gap-1 min-w-0">
+            <span className={clsx('text-xs font-medium', muted)}>GST</span>
+            <select
+              className={select}
+              value={gstFilter}
+              onChange={(e) => {
+                setGstFilter(e.target.value as '' | 'gst' | 'non-gst');
+                setPage(1);
+              }}
+            >
+              <option value="">GST & non-GST</option>
+              <option value="gst">GST invoices only</option>
+              <option value="non-gst">Non-GST only</option>
+            </select>
+          </label>
+          <label className="lg:col-span-1 flex flex-col gap-1 min-w-0">
+            <span className={clsx('text-xs font-medium', muted)}>From</span>
+            <input
+              type="date"
+              className={dateInput}
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
+              title="From date"
+            />
+          </label>
+          <label className="lg:col-span-1 flex flex-col gap-1 min-w-0">
+            <span className={clsx('text-xs font-medium', muted)}>To</span>
+            <input
+              type="date"
+              className={dateInput}
+              value={to}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
+              title="To date"
+            />
+          </label>
         </div>
         {loading ? (
-          <div className="p-8 animate-pulse text-sm text-slate-500">Loading invoices…</div>
+          <div className={clsx('p-8 animate-pulse text-sm', muted)}>Loading invoices…</div>
         ) : (
           <>
             <AdminTable
@@ -192,34 +234,39 @@ export default function AdminBillingPage() {
                 `₹${Number(inv.totalInr).toLocaleString('en-IN')}`,
                 `₹${Number(inv.amountPaidInr).toLocaleString('en-IN')}`,
                 <span key={inv.id} className="flex flex-wrap gap-2">
-                  <Link href={`/billing/invoices/${inv.id}`} className="text-emerald-400 text-xs hover:underline">
+                  <Link href={`/billing/invoices/${inv.id}`} className={clsx(linkClass, 'text-xs')}>
                     View
                   </Link>
                   {(inv.status === 'DRAFT' || inv.status === 'UNPAID') && Number(inv.amountPaidInr) === 0 ? (
-                    <Link href={`/billing/invoices/${inv.id}?edit=1`} className="text-slate-300 text-xs hover:underline">
+                    <Link href={`/billing/invoices/${inv.id}?edit=1`} className={clsx(tableActionMuted, 'text-xs hover:underline')}>
                       Edit
                     </Link>
                   ) : null}
                   {inv.status !== 'CANCELLED' && inv.status !== 'DRAFT' ? <InvoicePdfLink id={inv.id} /> : null}
                   {inv.status !== 'DRAFT' ? (
-                    <Link href={`/billing/invoices/${inv.id}/preview`} className="text-slate-400 text-xs hover:underline">
+                    <Link href={`/billing/invoices/${inv.id}/preview`} className={clsx(tableActionPrint, 'text-xs hover:underline')}>
                       Print
                     </Link>
                   ) : null}
                 </span>,
               ])}
             />
-            <div className="p-4 flex items-center justify-between text-sm border-t border-white/5">
-              <span>
+            <div
+              className={clsx(
+                'p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm border-t',
+                dark ? 'border-white/5' : 'border-stone-200/80',
+              )}
+            >
+              <span className={muted}>
                 Page {invoices.data?.page ?? 1} · {invoices.data?.total ?? 0} invoices
               </span>
               <div className="flex gap-2">
-                <button type="button" className="px-3 py-1 rounded border border-white/10 disabled:opacity-40" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                <button type="button" className={pagerBtn} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                   Previous
                 </button>
                 <button
                   type="button"
-                  className="px-3 py-1 rounded border border-white/10 disabled:opacity-40"
+                  className={pagerBtn}
                   disabled={(invoices.data?.page ?? 1) * (invoices.data?.limit ?? 25) >= (invoices.data?.total ?? 0)}
                   onClick={() => setPage((p) => p + 1)}
                 >
@@ -234,11 +281,11 @@ export default function AdminBillingPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, className, muted }: { label: string; value: string; className: string; muted: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="text-xl font-bold mt-1 tabular-nums">{value}</p>
+    <div className={className}>
+      <p className={clsx('text-xs uppercase tracking-wide', muted)}>{label}</p>
+      <p className="text-xl font-bold mt-1 tabular-nums text-stone-900 dark:text-inherit">{value}</p>
     </div>
   );
 }

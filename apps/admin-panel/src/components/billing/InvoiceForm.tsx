@@ -8,7 +8,8 @@ import { clsx } from 'clsx';
 import { adminFetch } from '@/lib/admin-api';
 import type { InvoiceLine, SellerProfile } from '@/lib/billing-types';
 import { Calendar, Gem, Receipt, StickyNote, User } from 'lucide-react';
-import { AdminBtnPrimary, AdminBtnSecondary, useAdminInputClass } from '@/components/admin/AdminForm';
+import { AdminBtnPrimary, AdminBtnSecondary } from '@/components/admin/AdminForm';
+import { useBillingInputClass, useBillingSelectClass } from '@/components/billing/billing-theme';
 import { CustomerPicker, type BillingCustomer } from './CustomerPicker';
 import { CreateInvoiceHeader } from './CreateInvoiceHeader';
 import { BillingAlert, BillingFormSection, InvoiceSummaryCard } from './create-invoice-ui';
@@ -58,8 +59,8 @@ type Props = {
 };
 
 export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0, initial, onSaved, initialStatus }: Props) {
-  const baseInput = useAdminInputClass();
-  const input = clsx(baseInput, 'border-stone-300 focus:border-amber-600 focus:ring-amber-600/25');
+  const input = useBillingInputClass();
+  const selectClass = useBillingSelectClass();
   const router = useRouter();
   const labelClass = 'block text-sm font-medium mb-1 text-stone-800';
   const hintClass = 'text-xs mt-1 text-stone-500';
@@ -492,7 +493,7 @@ export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0,
                 {gstApplied ? (
                   <td className="px-2 py-1.5">
                     <select
-                      className={input}
+                      className={selectClass}
                       value={line.gstRatePct ?? defaultRate}
                       onChange={(e) => setLines((ls) => ls.map((l, i) => (i === idx ? { ...l, gstRatePct: Number(e.target.value) } : l)))}
                     >
@@ -572,7 +573,7 @@ export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0,
             />
             {gstApplied ? (
               <select
-                className={`${input} col-span-2`}
+                className={`${selectClass} col-span-2`}
                 value={line.gstRatePct ?? defaultRate}
                 onChange={(e) => setLines((ls) => ls.map((l, i) => (i === idx ? { ...l, gstRatePct: Number(e.target.value) } : l)))}
               >
