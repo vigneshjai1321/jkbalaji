@@ -1,0 +1,12 @@
+---
+description: ERP admin Next.js app patterns
+globs: apps/admin-panel/**/*
+alwaysApply: false
+---
+
+# Admin panel
+
+- Next.js 15 App Router; dev port 3002.
+- API calls: use existing `adminFetch` / auth helpers; JWT in `localStorage` (`jk_token`).
+- Stack dev: `npm run dev:stack:admin` from monorepo root.
+- ERP build/check: `npm run build:erp`, `npm run typecheck:erp`, `npm run check:predeploy:admin`.

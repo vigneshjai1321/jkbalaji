@@ -1,0 +1,49 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma generated client (NestJS API)
+backend/api/src/generated/
+backend/api/dist/
+
+# credentials & deploy artifacts (never commit)
+PROJECT_CREDENTIALS.txt
+deployment/artifacts/
+deployment/DEPLOYMENT_REPORT.md
+
+# env (keep the .example templates)
+.env
+.env.*
+!.env.example
+!deploy/env/*.example
+
+# logs & runtime
+logs/
+*.log
+npm-debug.log*
+.pm2/
+coverage/
+playwright-report/
+test-results/
+
+# uploads / backups (never commit customer documents or DB dumps)
+uploads/
+backups/
+*.dump
+*.sql.gz
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

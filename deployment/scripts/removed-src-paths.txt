@@ -1,0 +1,15 @@
+# Explicit repo-relative paths removed on VPS after tarball extract (stale orphans only).
+# One path per line. No wildcards. Review before adding new entries.
+# See deployment/scripts/prune-stale-paths.sh
+
+# Legacy monolith admin/jewellery routes inside real-estate-web (split to separate apps)
+apps/real-estate-web/src/app/admin
+apps/real-estate-web/src/app/jewellery
+apps/real-estate-web/src/app/realestate
+apps/real-estate-web/src/middleware.ts
+apps/real-estate-web/src/components/jewellery
+apps/real-estate-web/src/components/admin
+
+# Orphan files seen on VPS after source was deleted locally (real-estate copy only)
+apps/real-estate-web/src/lib/jewellery-collections.ts
+apps/real-estate-web/src/components/HeroJewellery.tsx

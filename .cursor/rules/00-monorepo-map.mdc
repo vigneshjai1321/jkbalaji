@@ -1,0 +1,16 @@
+---
+description: JK Balaji monorepo — which app and API module to edit
+alwaysApply: true
+---
+
+# Monorepo map
+
+- **ERP admin UI:** `apps/admin-panel` (`@jkbalaji/admin-panel`, port 3002). Not inside `real-estate-web`.
+- **Real estate public site:** `apps/real-estate-web` (port 3000).
+- **Jewellery public site:** `apps/jewellery-web` (port 3001).
+- **API:** `backend/api` (`@jkbalaji/api`, port 4000). Nest modules under `backend/api/src/modules/`.
+- **Billing / invoices:** API `backend/api/src/modules/billing/`; admin billing under `apps/admin-panel`.
+- **DB:** Prisma in `database/`; generate via `npm run db:generate`.
+- **Deploy:** `deployment/deploy.ps1`, `BUILD_TARGETS` (default ERP deploy: `admin,api`).
+
+Before broad searches, open the app or module above for the user’s task. See `docs/LIVE-ARCHITECTURE.md`.

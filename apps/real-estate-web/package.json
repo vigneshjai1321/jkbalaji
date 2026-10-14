@@ -1,0 +1,49 @@
+{
+  "name": "@jkbalaji/real-estate-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JK Balaji back-office frontend - Next.js 15 App Router",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "5.9.1",
+    "@jkbalaji/types": "0.1.0",
+    "@tanstack/react-query": "5.104.1",
+    "@tanstack/react-table": "8.21.3",
+    "clsx": "2.1.1",
+    "date-fns": "4.4.0",
+    "lucide-react": "1.52.0",
+    "next": "15.5.27",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "7.89.0",
+    "recharts": "3.10.1",
+    "sonner": "2.0.8",
+    "tailwind-merge": "3.7.0",
+    "zod": "4.6.5",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.7",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "22.20.5",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.2",
+    "eslint": "9.39.5",
+    "eslint-config-next": "15.5.27",
+    "jsdom": "30.1.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}

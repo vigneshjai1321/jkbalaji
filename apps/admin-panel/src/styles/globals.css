@@ -1,0 +1,238 @@
+@import 'tailwindcss';
+@config '../../tailwind.config.ts';
+
+/* Global base styles & CSS variables only. Component styles live with components (Tailwind classes). */
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+/* Additional UI styles for premium look */
+html,
+body {
+  height: 100%;
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* Admin shell owns scrolling inside <main>; lock the document to stop sidebar/window jump on route change. */
+body:has(.admin-app) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html:has(.admin-app) {
+  scroll-behavior: auto;
+}
+.admin-app {
+  font-size: 15px;
+}
+.admin-app .text-xs { font-size: 0.8125rem; line-height: 1.35; }
+.admin-app table { font-size: 0.875rem; }
+
+/* Collapsed sidebar — flyout labels on hover (not clipped) */
+.admin-sidebar--collapsed {
+  overflow: visible !important;
+  z-index: 40;
+}
+.admin-sidebar--collapsed .admin-sidebar-scroll {
+  overflow-x: visible;
+  overflow-y: auto;
+}
+.admin-nav-flyout {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  min-width: 11rem;
+  max-width: 16rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.06);
+  z-index: 500;
+}
+.admin-nav-flyout::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 7px solid transparent;
+  border-right-color: inherit;
+  filter: drop-shadow(-1px 0 0 rgba(15, 23, 42, 0.06));
+}
+.admin-nav-flyout--light {
+  background: #0f172a;
+  color: #f8fafc;
+  border-right-color: #0f172a;
+}
+.admin-nav-flyout--light .admin-nav-flyout-hint {
+  color: #94a3b8;
+}
+.admin-nav-flyout--dark {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-right-color: #1e293b;
+}
+.admin-nav-link:hover .admin-nav-flyout,
+.admin-nav-link:focus-visible .admin-nav-flyout {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+.admin-header-bar {
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+}
+[data-admin-theme='dark'] .admin-header-bar {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.container-max { max-width: 1200px; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
+
+/* Smooth scroll (public pages only; admin disables via :has(.admin-app) above) */
+html:not(:has(.admin-app)) {
+  scroll-behavior: smooth;
+}
+
+.admin-sidebar-scroll {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Reveal helper (fallback) */
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s ease, transform .6s ease; }
+.reveal-visible { opacity: 1; transform: translateY(0); }
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-admin-theme='light'] .admin-chart-grid {
+  stroke: #e2e8f0;
+}
+
+/* JK Balaji Real Estate — layout rhythm */
+.re-container {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .re-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .re-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+.re-section {
+  padding-top: 4.5rem;
+  padding-bottom: 4.5rem;
+}
+@media (min-width: 768px) {
+  .re-section {
+    padding-top: 5.5rem;
+    padding-bottom: 5.5rem;
+  }
+}
+.re-heading {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #064e3b;
+}
+.re-subheading {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: #475569;
+}
+
+/* Billing — A4 print (preview route) */
+@media print {
+  body:has(.billing-print-root) {
+    overflow: visible !important;
+    background: white !important;
+  }
+  body:has(.billing-print-root) .admin-app > aside {
+    display: none !important;
+  }
+  body:has(.billing-print-root) .admin-app > div > header {
+    display: none !important;
+  }
+  body:has(.billing-print-root) .admin-app main {
+    padding: 0 !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+  body:has(.billing-print-root) .admin-app main > .mb-4 {
+    display: none !important;
+  }
+  body:has(.billing-print-root) .no-print {
+    display: none !important;
+  }
+  .billing-print-root {
+    background: white !important;
+  }
+  .invoice-a4 {
+    box-shadow: none !important;
+    width: 210mm;
+    max-width: 210mm;
+    min-height: auto;
+    margin: 0 auto;
+    padding: 12mm;
+    page-break-inside: avoid;
+  }
+  .invoice-compact {
+    box-shadow: none !important;
+    width: 210mm;
+    max-width: 210mm;
+    margin: 0 auto;
+    page-break-inside: avoid;
+  }
+  .invoice-print-compact-wrap .invoice-compact-inner {
+    border: 2px solid #0f172a;
+    padding: 5mm 6mm;
+    background: white;
+  }
+}
+
+.invoice-a4 {
+  width: 100%;
+  max-width: 210mm;
+  min-height: auto;
+  padding: 12mm;
+}
+
+.invoice-compact {
+  width: 100%;
+  max-width: 210mm;
+}
+
+.invoice-compact-inner {
+  border: 2px solid #0f172a;
+  padding: 5mm 6mm;
+  background: white;
+}
+
+.invoice-print-full-wrap .invoice-a4 {
+  min-height: 280mm;
+}

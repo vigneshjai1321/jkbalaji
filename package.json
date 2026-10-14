@@ -1,0 +1,63 @@
+{
+  "name": "jkbalaji",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JK Balaji — Real Estate, Jewellery public sites + Enterprise Admin (Jamavisa Enterprises)",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "backend/*"
+  ],
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n types,api,web -c gray,blue,green \"npm run dev -w @jkbalaji/types\" \"npm run start:dev -w @jkbalaji/api\" \"npm run dev -w @jkbalaji/real-estate-web\"",
+    "dev:stack:admin": "concurrently -k -n types,api,admin -c gray,blue,magenta \"npm run dev -w @jkbalaji/types\" \"npm run start:dev -w @jkbalaji/api\" \"npm run dev -w @jkbalaji/admin-panel\"",
+    "dev:stack:jewellery": "concurrently -k -n types,api,jew -c gray,blue,cyan \"npm run dev -w @jkbalaji/types\" \"npm run start:dev -w @jkbalaji/api\" \"npm run dev -w @jkbalaji/jewellery-web\"",
+    "dev:stack:re": "concurrently -k -n types,api,re -c gray,blue,green \"npm run dev -w @jkbalaji/types\" \"npm run start:dev -w @jkbalaji/api\" \"npm run dev -w @jkbalaji/real-estate-web\"",
+    "dev:web": "npm run dev -w @jkbalaji/real-estate-web",
+    "dev:admin": "npm run dev -w @jkbalaji/admin-panel",
+    "dev:jewellery": "npm run dev -w @jkbalaji/jewellery-web",
+    "dev:api": "npm run start:dev -w @jkbalaji/api",
+    "build": "npm run build:types && npm run build:api && npm run build:re && npm run build:jew && npm run build:admin",
+    "build:erp": "npm run build:types && npm run build:api && npm run build:admin",
+    "build:public": "npm run build:types && npm run build:re && npm run build:jew",
+    "build:types": "npm run build -w @jkbalaji/types",
+    "build:api": "npm run build -w @jkbalaji/api",
+    "build:re": "npm run build -w @jkbalaji/real-estate-web",
+    "build:jew": "npm run build -w @jkbalaji/jewellery-web",
+    "build:admin": "npm run build -w @jkbalaji/admin-panel",
+    "build:web": "npm run build:re",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck:api": "npm run typecheck -w @jkbalaji/api",
+    "typecheck:admin": "npm run typecheck -w @jkbalaji/admin-panel",
+    "typecheck:re": "npm run typecheck -w @jkbalaji/real-estate-web",
+    "typecheck:jew": "npm run typecheck -w @jkbalaji/jewellery-web",
+    "typecheck:erp": "npm run typecheck -w @jkbalaji/types && npm run typecheck -w @jkbalaji/api && npm run typecheck -w @jkbalaji/admin-panel",
+    "test:api": "npm run test -w @jkbalaji/api",
+    "test": "npm run test --workspaces --if-present",
+    "check:erp": "npm run typecheck:erp && npm run test:api",
+    "check:predeploy:admin": "npm run check:erp && npm run build:erp",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "npm run prisma:generate -w @jkbalaji/api",
+    "db:migrate:dev": "npm run prisma:migrate:dev -w @jkbalaji/api",
+    "db:migrate:deploy": "npm run prisma:migrate:deploy -w @jkbalaji/api",
+    "db:seed": "npm run db:seed -w @jkbalaji/api",
+    "db:studio": "npm run prisma:studio -w @jkbalaji/api",
+    "clean": "echo \"Remove dist/.next via rimraf when needed\""
+  },
+  "devDependencies": {
+    "concurrently": "10.0.5",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.3",
+    "lightningcss-linux-x64-gnu": "1.30.1"
+  }
+}

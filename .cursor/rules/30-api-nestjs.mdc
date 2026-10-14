@@ -1,0 +1,12 @@
+---
+description: NestJS API conventions in backend/api
+globs: backend/api/**/*
+alwaysApply: false
+---
+
+# API (@jkbalaji/api)
+
+- ESM NestJS 12; Prisma client under `src/generated/prisma/`.
+- New features: add a module under `src/modules/<name>/` (controller, service, DTOs).
+- Run focused checks: `npm run typecheck:api`, `npm run test:api` from repo root.
+- Do not run `db:migrate:deploy` or production seeds unless explicitly requested.

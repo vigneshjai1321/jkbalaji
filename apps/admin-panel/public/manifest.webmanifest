@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "JK Balaji ERP Admin",
+  "short_name": "JK Admin",
+  "description": "Business management for JK Balaji Group",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#1e3a8a",
+  "background_color": "#f8fafc",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+---
+description: Deploy and VPS install safety
+globs: deployment/**/*
+alwaysApply: false
+---
+
+# Deploy safety
+
+- Do not run `deploy.ps1` or change production PM2 unless the user explicitly requests a production deploy.
+- `BUILD_TARGETS` controls which apps build and restart; default ERP release is `admin,api`.
+- Remote install must fail closed: non-zero exit if build, SSH, or `verify-deploy.sh` fails.
+- Success requires `logs/last-deploy-build.ok`, not merely a running old API process.
+- Stale file removal: only paths listed in `deployment/scripts/removed-src-paths.txt` via `prune-stale-paths.sh` — no wildcards, no `..`, support `DRY_RUN=1`.
+- Migrations/seeds: use `SKIP_DB_MIGRATE=1` / `SKIP_DB_SEED=1` when the user forbids schema or data changes.

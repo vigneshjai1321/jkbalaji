@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+@config '../../tailwind.config.ts';
+
+/* Global base styles & CSS variables only. Component styles live with components (Tailwind classes). */
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+/* Additional UI styles for premium look */
+html,body,#__next { height: 100%; }
+body { font-family: var(--font-sans); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+.container-max { max-width: 1200px; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+/* Reveal helper (fallback) */
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s ease, transform .6s ease; }
+.reveal-visible { opacity: 1; transform: translateY(0); }
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-admin-theme='light'] .admin-chart-grid {
+  stroke: #e2e8f0;
+}
+
+/* JK Balaji Real Estate — layout rhythm */
+.re-container {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .re-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .re-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+.re-section {
+  padding-top: clamp(2.25rem, 5vw, 3.25rem);
+  padding-bottom: clamp(2.25rem, 5vw, 3.25rem);
+}
+@media (min-width: 768px) {
+  .re-section {
+    padding-top: clamp(2.75rem, 4.5vw, 3.75rem);
+    padding-bottom: clamp(2.75rem, 4.5vw, 3.75rem);
+  }
+}
+.re-eyebrow {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #047857;
+}
+.re-footer-heading {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #6ee7b7;
+}
+.re-heading {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #064e3b;
+}
+.re-subheading {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: #475569;
+}
