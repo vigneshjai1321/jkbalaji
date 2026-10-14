@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { ContactLeadForm } from '@/components/ContactLeadForm';
 import { SiteImage } from '@/components/site/SiteImage';
 import { RealEstatePageShell } from './RealEstatePageShell';
 import { JK_NAGAR_PHASES, leadTypeForPhase, type JkNagarPhaseId } from '@/lib/jk-nagar-phases';
 import { realEstateImages } from '@/lib/site-images';
 import { RE_ROUTES } from '@/lib/site-routes';
+import { ReBreadcrumbs, ReEnquireCtaBar, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 
 export function JkNagarPhasePage({ phaseId }: { phaseId: JkNagarPhaseId }) {
   const phase = JK_NAGAR_PHASES.find((p) => p.id === phaseId)!;
@@ -12,28 +12,28 @@ export function JkNagarPhasePage({ phaseId }: { phaseId: JkNagarPhaseId }) {
 
   return (
     <RealEstatePageShell whatsappText={`JK Nagar ${phaseId.replace('phase-', 'Phase ')} enquiry`}>
-      <div className="re-container py-10 md:py-14">
-        <nav className="text-sm text-slate-600 mb-4" aria-label="Breadcrumb">
-          <Link href={RE_ROUTES.home} className="hover:text-emerald-800">
-            Home
-          </Link>
-          <span className="mx-2">/</span>
-          <Link href={RE_ROUTES.jkNagar} className="hover:text-emerald-800">
-            JK Nagar
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="text-slate-900 font-medium">{phase.name}</span>
-        </nav>
-        <p className="re-eyebrow">{phase.statusLabel}</p>
-        <h1 className="re-heading mt-2">{phase.name}</h1>
-        <p className="re-subheading mt-3 max-w-2xl">{phase.summary}</p>
-        <div className="mt-8 rounded-2xl overflow-hidden border border-slate-200 shadow-md max-w-3xl">
-          <SiteImage src={image.src} alt={image.alt} width={1200} height={675} className="w-full h-auto max-h-80 object-cover" />
-          <p className="text-xs text-slate-500 px-4 py-2 bg-white border-t border-slate-100">
+      <RePageHeader
+        eyebrow={phase.statusLabel}
+        title={phase.name}
+        description={phase.summary}
+        breadcrumbs={
+          <ReBreadcrumbs
+            items={[
+              { href: RE_ROUTES.home, label: 'Home' },
+              { href: RE_ROUTES.jkNagar, label: 'JK Nagar' },
+              { label: phase.name },
+            ]}
+          />
+        }
+      />
+      <div className="re-container pb-6 md:pb-8">
+        <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm max-w-3xl">
+          <SiteImage src={image.src} alt={image.alt} width={1200} height={675} className="w-full h-auto max-h-64 object-cover" />
+          <p className="text-xs text-slate-500 px-3 py-2 bg-white border-t border-slate-100">
             Layout photography — enquire for site-specific photos and availability.
           </p>
         </div>
-        <div className="mt-10 max-w-xl">
+        <div className="mt-6 max-w-xl">
           {phase.plotsAvailable ? (
             <>
               <h2 className="text-lg font-semibold text-slate-900">Plot enquiry</h2>
@@ -53,6 +53,9 @@ export function JkNagarPhasePage({ phaseId }: { phaseId: JkNagarPhaseId }) {
           )}
         </div>
       </div>
+      {phase.plotsAvailable ? (
+        <ReEnquireCtaBar title="Schedule a JK Nagar site visit" detail="Phase 3 remains register-interest only — our team confirms which plots are open for enquiry." />
+      ) : null}
     </RealEstatePageShell>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { MapEmbed } from '@/components/site/MapEmbed';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
+import { ReLocationContactStrip, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { JK_BALAJI_RE } from '@/lib/real-estate-business';
 
 export const metadata: Metadata = {
@@ -12,14 +13,11 @@ export const metadata: Metadata = {
 export default function LocationPage() {
   return (
     <RealEstatePageShell>
-      <div className="re-container py-10 md:py-14">
-        <p className="re-eyebrow">Visit</p>
-        <h1 className="re-heading mt-2">Location & Map</h1>
-        <p className="re-subheading mt-3 max-w-2xl">{JK_BALAJI_RE.location}</p>
-        <div className="mt-10">
-          <MapEmbed title={JK_BALAJI_RE.name} />
-        </div>
+      <RePageHeader eyebrow="Visit" title="Location & Map" description={JK_BALAJI_RE.location} />
+      <div className="re-container pb-6 md:pb-8 max-w-3xl">
+        <MapEmbed title={JK_BALAJI_RE.name} />
       </div>
+      <ReLocationContactStrip />
     </RealEstatePageShell>
   );
 }

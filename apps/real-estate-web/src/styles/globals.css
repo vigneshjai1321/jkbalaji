@@ -64,6 +64,13 @@ html { scroll-behavior: smooth; }
     padding-bottom: clamp(2.75rem, 4.5vw, 3.75rem);
   }
 }
+.re-inner-band .re-container {
+  /* bands use shared container padding */
+}
+.re-faq-compact.re-section {
+  padding-top: clamp(1.5rem, 3vw, 2.25rem);
+  padding-bottom: clamp(1rem, 2vw, 1.5rem);
+}
 .re-eyebrow {
   font-size: 0.875rem;
   font-weight: 600;

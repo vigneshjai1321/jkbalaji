@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GoldSchemeEnquiry } from '@/components/jewellery/GoldSchemeEnquiry';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
+import { JwPageHeader, JwSchemeProcessNote } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SRI_BALAJI } from '@/lib/jewellery-business';
 import { JW_ROUTES } from '@/lib/site-routes';
 
@@ -14,30 +15,35 @@ export const metadata: Metadata = {
 export default function GoldSchemesPage() {
   return (
     <JewelleryPageShell>
-      <section className="jw-section bg-gradient-to-b from-amber-50/80 to-[#faf8f4]">
+      <section className="jw-section-inner bg-gradient-to-b from-amber-50/80 to-[#faf8f4]">
         <div className="jw-container">
-          <h1 className="jw-heading text-3xl md:text-4xl font-semibold text-stone-900">Gold Savings Scheme</h1>
-          <p className="mt-4 text-stone-600 max-w-3xl leading-relaxed">
-            Save towards your jewellery purchase at Sri Balaji Thangamaligai, Cheyyar. Use this page to choose a contribution level
-            and send an enquiry — enrolment, payment frequency, maturity, and redemption rules are explained in person using our
-            approved shop policy.
-          </p>
-          <ul className="mt-6 space-y-2 text-sm text-stone-700 max-w-2xl list-disc pl-5">
+          <JwPageHeader
+            title="Gold Savings Scheme"
+            description="Choose a contribution level and send an enquiry — enrolment and payment happen in the showroom under approved shop policy."
+          />
+          <ul className="mt-4 space-y-1.5 text-sm text-stone-700 max-w-2xl list-disc pl-5">
             <li>No guaranteed returns, bonus gold, or promotional benefits are promised on this website.</li>
-            <li>Online payment and enrolment are not active until configured with a verified payment provider and approved terms.</li>
-            <li>Call <a href={SRI_BALAJI.schemeTel} className="text-amber-900 font-medium underline">{SRI_BALAJI.schemePhoneDisplay}</a> for immediate assistance.</li>
+            <li>Online payment and enrolment are not active on this site.</li>
+            <li>
+              Call{' '}
+              <a href={SRI_BALAJI.schemeTel} className="text-amber-900 font-medium underline">
+                {SRI_BALAJI.schemePhoneDisplay}
+              </a>{' '}
+              for immediate assistance.
+            </li>
           </ul>
         </div>
       </section>
-      <section className="jw-section">
+      <JwSchemeProcessNote />
+      <section className="jw-section-inner">
         <div className="jw-container">
           <GoldSchemeEnquiry />
         </div>
       </section>
-      <section className="jw-section bg-white border-t border-stone-100">
+      <section className="jw-section-inner bg-white border-t border-stone-100">
         <div className="jw-container max-w-3xl text-sm text-stone-600">
           <p>
-            Scheme terms and conditions are provided at enrolment. See also{' '}
+            Scheme terms are provided at enrolment. See{' '}
             <Link href={JW_ROUTES.faq} className="text-amber-900 underline">
               FAQs
             </Link>{' '}

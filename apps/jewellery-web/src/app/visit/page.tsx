@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { JewelleryMap } from '@/components/jewellery/JewelleryMap';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
+import { JwPageHeader } from '@/components/jewellery/inner/JwInnerBlocks';
 import { SRI_BALAJI } from '@/lib/jewellery-business';
 
 export const metadata: Metadata = {
@@ -12,16 +13,19 @@ export const metadata: Metadata = {
 export default function VisitPage() {
   return (
     <JewelleryPageShell>
-      <section className="jw-section">
+      <JwPageHeader
+        eyebrow="Visit"
+        title="Visit Our Showroom"
+        description={SRI_BALAJI.addressLine}
+      />
+      <section className="jw-section-inner pt-0">
         <div className="jw-container max-w-3xl">
-          <h1 className="jw-heading text-3xl font-semibold text-stone-900">Visit Our Showroom</h1>
-          <p className="mt-3 text-stone-600">{SRI_BALAJI.addressLine}</p>
-          <p className="mt-2 text-sm text-stone-600">{SRI_BALAJI.hours.open}</p>
+          <p className="text-sm text-stone-600">{SRI_BALAJI.hours.open}</p>
           <p className="text-sm text-stone-600">{SRI_BALAJI.hours.closed}</p>
-          <a href={SRI_BALAJI.directionsUrl} className="jw-btn-outline inline-flex mt-6">
+          <a href={SRI_BALAJI.directionsUrl} className="jw-btn-outline inline-flex mt-4 text-sm">
             Get directions
           </a>
-          <div className="mt-10">
+          <div className="mt-6">
             <JewelleryMap />
           </div>
         </div>

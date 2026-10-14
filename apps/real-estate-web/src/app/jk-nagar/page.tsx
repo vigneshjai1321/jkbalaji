@@ -1,33 +1,31 @@
 import type { Metadata } from 'next';
 import { JkNagarPhasesSection } from '@/components/realestate/JkNagarPhasesSection';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
+import { RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { ContactLeadForm } from '@/components/ContactLeadForm';
 import { MapEmbed } from '@/components/site/MapEmbed';
 
 export const metadata: Metadata = {
   title: 'JK Nagar Phases | JK Balaji Real Estate',
-  description: 'JK Nagar Phase 1 (Almost Completed), Phase 2 (Ongoing), and Phase 3 (Yet to Be Announced). Plot enquiries for Phase 1 and 2.',
+  description: 'JK Nagar Phase 1, Phase 2, and Phase 3 (register interest). Plot enquiries for Phase 1 and 2.',
   alternates: { canonical: 'https://jkbalaji.in/jk-nagar' },
 };
 
 export default function JkNagarPage() {
   return (
     <RealEstatePageShell whatsappText="JK Nagar plot enquiry">
-      <div className="re-container py-10 md:py-14">
-        <p className="re-eyebrow">JK Balaji Real Estate</p>
-        <h1 className="re-heading mt-2">JK Nagar</h1>
-        <p className="re-subheading mt-3 max-w-2xl">
-          A planned residential layout delivered in three phases. Verified project information and enquiry capture — no speculative
-          pricing or launch dates.
-        </p>
-      </div>
+      <RePageHeader
+        eyebrow="JK Balaji Real Estate"
+        title="JK Nagar"
+        description="A planned residential layout in three phases. Verified information only — no speculative pricing or launch dates."
+      />
       <JkNagarPhasesSection />
-      <section className="re-section bg-slate-100">
-        <div className="re-container grid gap-10 lg:grid-cols-2">
+      <section className="re-inner-band border-t border-slate-200 bg-slate-50/80">
+        <div className="re-container py-5 md:py-6 grid gap-8 lg:grid-cols-2">
           <div>
-            <h2 className="re-heading">General enquiry</h2>
-            <p className="re-subheading mt-2">Questions about JK Nagar or other JK Balaji developments.</p>
-            <div className="mt-6">
+            <h2 className="text-base font-semibold text-slate-900">General enquiry</h2>
+            <p className="text-sm text-slate-600 mt-1">Questions about JK Nagar or other developments.</p>
+            <div className="mt-4">
               <ContactLeadForm site="REAL_ESTATE" leadType="JK_NAGAR_GENERAL" sourcePage="/jk-nagar" />
             </div>
           </div>

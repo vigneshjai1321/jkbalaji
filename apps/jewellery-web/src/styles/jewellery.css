@@ -40,6 +40,9 @@
 .jw-section {
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
 }
+.jw-section-inner {
+  padding-block: clamp(1.25rem, 3vw, 2rem);
+}
 
 .jw-eyebrow {
   font-size: 0.6875rem;

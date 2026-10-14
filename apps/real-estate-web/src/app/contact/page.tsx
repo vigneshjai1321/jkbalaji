@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ContactLeadForm } from '@/components/ContactLeadForm';
 import { MapEmbed } from '@/components/site/MapEmbed';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
+import { ReContactGuide, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { JK_BALAJI_RE } from '@/lib/real-estate-business';
 
 export const metadata: Metadata = {
@@ -13,12 +14,10 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <RealEstatePageShell>
-      <div className="re-container py-10 md:py-14 grid gap-10 lg:grid-cols-2">
+      <RePageHeader eyebrow="Contact" title="Enquire About a Property" description="We respond within one business day." />
+      <div className="re-container pb-6 md:pb-8 grid gap-8 lg:grid-cols-2">
         <div>
-          <p className="re-eyebrow">Contact</p>
-          <h1 className="re-heading mt-2">Enquire About a Property</h1>
-          <p className="re-subheading mt-3">We respond within one business day.</p>
-          <ul className="mt-6 space-y-2 text-sm text-slate-700">
+          <ul className="space-y-1.5 text-sm text-slate-700">
             <li>
               <a href={`tel:${JK_BALAJI_RE.phoneE164}`} className="text-emerald-800 font-medium hover:underline">
                 {JK_BALAJI_RE.phoneDisplay}
@@ -30,12 +29,11 @@ export default function ContactPage() {
               </a>
             </li>
           </ul>
-          <div className="mt-8">
-            <ContactLeadForm site="REAL_ESTATE" sourcePage="/contact" />
-          </div>
+          <ContactLeadForm site="REAL_ESTATE" sourcePage="/contact" />
         </div>
         <MapEmbed title="Find us" />
       </div>
+      <ReContactGuide />
     </RealEstatePageShell>
   );
 }

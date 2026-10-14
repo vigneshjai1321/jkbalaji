@@ -45,8 +45,8 @@ export async function MarketRatesBanner() {
 
   if (!hasRates) {
     return (
-      <section className="jw-section bg-amber-50/60 border-y border-amber-100">
-        <div className="jw-container max-w-3xl text-center text-sm text-stone-600">
+      <section className="bg-amber-50/60 border border-amber-100 rounded-xl text-center text-sm text-stone-600 px-4 py-5">
+        <div className="max-w-3xl mx-auto">
           <p className="font-medium text-stone-800">Rate currently unavailable</p>
           <p className="mt-2">
             Reference rates appear when the server is configured with GoldAPI (<code className="text-xs">GOLDAPI_ACCESS_TOKEN</code>)
@@ -60,7 +60,7 @@ export async function MarketRatesBanner() {
 
   return (
     <section
-      className="jw-section bg-gradient-to-b from-amber-50/90 to-[#faf8f4] border-y border-amber-100/80"
+      className="bg-gradient-to-b from-amber-50/90 to-[#faf8f4] border border-amber-100/80 rounded-xl px-2 py-4 md:py-5"
       aria-labelledby="market-rates-heading"
     >
       <div id="market-rates-heading" className="sr-only">

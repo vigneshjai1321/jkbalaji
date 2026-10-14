@@ -5,6 +5,7 @@ import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell
 import { SiteImage } from '@/components/site/SiteImage';
 import { resolvePublicAssetUrl } from '@/lib/site-asset-url';
 import { RE_ROUTES } from '@/lib/site-routes';
+import { ReLocationContactStrip } from '@/components/realestate/inner/ReInnerBlocks';
 import { apiGet } from '@/lib/api';
 
 type Property = Record<string, unknown> & {
@@ -50,12 +51,12 @@ export default async function PropertyDetail({ params }: { params: Promise<{ slu
 
   return (
     <RealEstatePageShell whatsappText={`Enquiry: ${property.title}`}>
-      <div className="re-container py-10 md:py-14 max-w-4xl">
+      <div className="re-container py-6 md:py-8 max-w-4xl">
         <Link href={RE_ROUTES.properties} className="text-sm text-emerald-700 font-medium hover:underline">
           ← Back to properties
         </Link>
         <article className="mt-6 rounded-2xl overflow-hidden bg-white border shadow-lg">
-          <div className="relative h-64 md:h-80 bg-slate-100">
+          <div className="relative h-52 md:h-64 bg-slate-100">
             {img ? (
               <SiteImage src={img} alt={`${property.title} listing photo`} fill sizes="100vw" priority />
             ) : (
@@ -78,6 +79,7 @@ export default async function PropertyDetail({ params }: { params: Promise<{ slu
           </div>
         </article>
       </div>
+      <ReLocationContactStrip />
     </RealEstatePageShell>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ProjectsBlock } from '@/components/public/ProjectsBlock';
 import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
+import { ReBuyingProcessCompact, ReEnquireCtaBar, RePageHeader } from '@/components/realestate/inner/ReInnerBlocks';
 import { apiGet } from '@/lib/api';
 
 export const metadata: Metadata = {
@@ -28,15 +29,14 @@ export default async function ProjectsPage() {
 
   return (
     <RealEstatePageShell>
-      <div className="re-container py-10 md:py-14">
-        <p className="re-eyebrow">Developments</p>
-        <h1 className="re-heading mt-2">Our Projects</h1>
-        <p className="re-subheading mt-3 max-w-2xl">
-          Published layouts from our admin catalogue. Availability and pricing are confirmed when you enquire — we do not list
-          speculative launches.
-        </p>
-      </div>
+      <RePageHeader
+        eyebrow="Developments"
+        title="Our Projects"
+        description="Published layouts from our catalogue. Availability and pricing are confirmed when you enquire."
+      />
       <ProjectsBlock projects={projects} />
+      <ReBuyingProcessCompact />
+      <ReEnquireCtaBar title="Book a site visit" detail="Tell us which project interests you — we schedule visits after confirming availability." />
     </RealEstatePageShell>
   );
 }

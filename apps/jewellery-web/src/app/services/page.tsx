@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { JewelleryPageShell } from '@/components/jewellery/JewelleryPageShell';
-import { JW_ROUTES } from '@/lib/site-routes';
+import { JwPageHeader, JwShowroomCtaBar } from '@/components/jewellery/inner/JwInnerBlocks';
 
 export const metadata: Metadata = {
   title: 'Services | Sri Balaji Thangamaligai',
@@ -19,22 +18,20 @@ const SERVICES = [
 export default function ServicesPage() {
   return (
     <JewelleryPageShell>
-      <section className="jw-section">
+      <JwPageHeader eyebrow="Showroom" title="Services & Trust" description="Services available in person at our Cheyyar showroom." />
+      <section className="jw-section-inner pt-0">
         <div className="jw-container max-w-3xl">
-          <h1 className="jw-heading text-3xl font-semibold text-stone-900">Services & Trust</h1>
-          <ul className="mt-8 space-y-6">
+          <ul className="space-y-3">
             {SERVICES.map((s) => (
-              <li key={s.title} className="jw-card p-6">
-                <h2 className="font-semibold text-stone-900">{s.title}</h2>
-                <p className="mt-2 text-sm text-stone-600">{s.desc}</p>
+              <li key={s.title} className="jw-card p-4 md:p-5">
+                <h2 className="font-semibold text-stone-900 text-sm md:text-base">{s.title}</h2>
+                <p className="mt-1 text-sm text-stone-600">{s.desc}</p>
               </li>
             ))}
           </ul>
-          <Link href={JW_ROUTES.contact} className="jw-btn-gold inline-flex mt-10">
-            Contact showroom
-          </Link>
         </div>
       </section>
+      <JwShowroomCtaBar primaryLabel="Contact showroom" primaryHref="/contact" />
     </JewelleryPageShell>
   );
 }
