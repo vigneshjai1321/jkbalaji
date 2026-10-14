@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { createContext, useContext, useEffect, useRef, useState, type RefObject } from 'react';
 import { clsx } from 'clsx';
 import { NAV_GROUPS, navItemIsActive } from './admin-nav';
+import { filterNavGroupsForRole } from '@/lib/admin-nav-access';
 import { BusinessPathSync, useBusiness } from './BusinessContext';
 import { AdminTopBar } from './AdminTopBar';
 import { AdminBreadcrumbs } from './AdminBreadcrumbs';
@@ -46,11 +47,14 @@ export function AdminShell({
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const dark = theme === 'dark';
   const { business } = useBusiness();
-  const visibleGroups = NAV_GROUPS.filter((group) => {
-    if (business === 'real-estate') return group.title !== 'Jewellery';
-    if (business === 'jewellery') return group.title !== 'Real Estate';
-    return true;
-  });
+  const visibleGroups = filterNavGroupsForRole(
+    NAV_GROUPS.filter((group) => {
+      if (business === 'real-estate') return group.title !== 'Jewellery';
+      if (business === 'jewellery') return group.title !== 'Real Estate';
+      return true;
+    }),
+    user.role,
+  );
   const businessLabel = business === 'real-estate' ? 'Real Estate' : business === 'jewellery' ? 'Gold & Jewellery' : 'All businesses';
 
   useEffect(() => {

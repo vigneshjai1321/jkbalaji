@@ -39,4 +39,12 @@ export type PublicMarketRatesDto = {
     requestCount: number;
     monthlyLimit: number;
   };
+  /** Present when provider is kjpl.in */
+  kjpl?: {
+    goldWithoutGstInr: number;
+    goldWithGstInr: number | null;
+    silverWithoutGstInr: number;
+    silverWithGstInr: number | null;
+    sourceUpdatedAtText: string | null;
+  } | null;
 };

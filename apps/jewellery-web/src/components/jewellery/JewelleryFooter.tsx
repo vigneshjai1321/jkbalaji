@@ -28,28 +28,48 @@ export function JewelleryFooter() {
           <p className="jw-footer-heading">Navigate</p>
           <ul className="mt-4 space-y-2 text-sm">
             <li>
-              <Link href="/#collections" className="hover:text-amber-200">
+              <Link href="/collections" className="hover:text-amber-200">
                 Collections
               </Link>
             </li>
             <li>
-              <Link href="/#schemes" className="hover:text-amber-200">
+              <Link href="/gold-schemes" className="hover:text-amber-200">
                 Gold Savings Scheme
               </Link>
             </li>
             <li>
-              <Link href="/#services" className="hover:text-amber-200">
+              <Link href="/services" className="hover:text-amber-200">
                 Services
               </Link>
             </li>
             <li>
-              <Link href="/#about" className="hover:text-amber-200">
+              <Link href="/gallery" className="hover:text-amber-200">
+                Gallery
+              </Link>
+            </li>
+            <li>
+              <Link href="/gold-rates" className="hover:text-amber-200">
+                Gold Rates
+              </Link>
+            </li>
+            <li>
+              <Link href="/visit" className="hover:text-amber-200">
+                Visit showroom
+              </Link>
+            </li>
+            <li>
+              <Link href="/about" className="hover:text-amber-200">
                 About
               </Link>
             </li>
             <li>
-              <Link href="/#contact" className="hover:text-amber-200">
+              <Link href="/contact" className="hover:text-amber-200">
                 Contact
+              </Link>
+            </li>
+            <li>
+              <Link href="/faq" className="hover:text-amber-200">
+                FAQ
               </Link>
             </li>
             <li>

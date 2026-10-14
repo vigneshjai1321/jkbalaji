@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ContactLeadForm } from '@/components/ContactLeadForm';
+import { PublicAssetImg } from '@/components/site/PublicAssetImg';
 import { realEstateImages } from '@/lib/site-images';
 import { JK_NAGAR_PHASES, leadTypeForPhase, type JkNagarPhaseId } from '@/lib/jk-nagar-phases';
 import { clsx } from 'clsx';
@@ -31,7 +32,7 @@ export function JkNagarPhasesSection() {
                 )}
               >
                 <div className="aspect-[16/10] overflow-hidden bg-slate-100">
-                  <img src={img.src} alt={img.alt} className="h-full w-full object-cover" loading="lazy" />
+                  <PublicAssetImg src={img.src} alt={img.alt} className="h-full w-full object-cover" loading="lazy" />
                 </div>
                 <div className="flex flex-1 flex-col p-5 sm:p-6">
                   <span

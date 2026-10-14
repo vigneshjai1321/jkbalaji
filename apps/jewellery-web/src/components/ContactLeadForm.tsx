@@ -10,9 +10,11 @@ function validPhone(p: string) {
 export function ContactLeadForm({
   leadType = 'GENERAL_CONTACT',
   sourcePage,
+  schemeAmountInr,
 }: {
   leadType?: string;
   sourcePage?: string;
+  schemeAmountInr?: number;
 }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -51,6 +53,7 @@ export function ContactLeadForm({
         email: email.trim() || undefined,
         message: message.trim() || undefined,
         sourcePage: sourcePage ?? (typeof window !== 'undefined' ? window.location.pathname : undefined),
+        ...(schemeAmountInr != null ? { schemeAmountInr } : {}),
       });
       setStatus('ok');
       setName('');

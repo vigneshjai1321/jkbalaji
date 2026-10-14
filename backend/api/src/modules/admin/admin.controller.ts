@@ -155,6 +155,8 @@ export class AdminController {
   }
 
   @Post('properties')
+  @UseGuards(RolesGuard)
+  @Roles(...PROJECT_EDITORS)
   createProperty(@Body() body: Record<string, unknown>) {
     const title = typeof body.title === 'string' ? body.title.trim() : '';
     const slug = typeof body.slug === 'string' ? body.slug.trim().toLowerCase() : '';
@@ -188,6 +190,8 @@ export class AdminController {
   }
 
   @Post('products')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.GOLD_MANAGER)
   createProduct(@Body() body: Record<string, unknown>) {
     return this.prisma.jewelleryProduct.create({ data: body as never });
   }

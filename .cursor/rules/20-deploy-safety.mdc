@@ -1,33 +1,91 @@
 ---
-description: Production deploy and GitHub backup workflow (JK Balaji)
+description: Mandatory Git backup-before-deploy workflow (test, commit, push, then deploy)
 alwaysApply: true
 ---
 
-# Deployment and backup safety
+# Deployment and GitHub backup safety
 
-GitHub (`git@github.com:vigneshjai1321/jkbalaji.git`) is **source backup only** — never add GitHub Actions or auto-deploy from push.
+GitHub (`git@github.com:vigneshjai1321/jkbalaji.git`) is **source backup only** — never add GitHub Actions, CI/CD, or auto-deploy from push.
 
-## Before any deploy
+**Required workflow for every deployment:**
 
-1. Inspect `git status`, branch, remotes, and diff; preserve unrelated user changes.
-2. Run relevant checks (e.g. `npm run test:api`, `npm run typecheck:erp`, `npm run build:erp` for admin/API releases).
-3. Review staged files — never commit `.env`, `PROJECT_CREDENTIALS.txt`, keys, dumps, `node_modules`, `.next`, `dist`, `backups/`, or deploy artifacts.
-4. Create a descriptive local commit when there are real changes; do not amend history without approval.
-5. Push to `origin main` only when the user authorized it and SSH/HTTPS auth works; never force-push.
+**Test → Review → Commit → Push backup → Verify push → Deploy → Verify production → Report**
 
-## Deploy execution
+Do not skip steps. Do not deploy if GitHub push did not succeed.
 
-- Use `deployment/deploy.ps1` with explicit `-BuildTargets` (ERP default: `admin,api`).
-- Do not rebuild/restart public sites unless targets include `re` / `jew` / `all`.
+---
+
+## 1. Inspect
+
+- Check `git status`, current branch, `git remote -v`, and what changed.
+- Preserve unrelated user work; do not stash or discard without approval.
+
+## 2. Test
+
+- Run checks appropriate to the deploy targets (examples):
+  - ERP (`admin`, `api`): `npm run test:api`, `npm run typecheck:erp`, `npm run test -w @jkbalaji/admin-panel`, `npm run build:erp`
+  - Public (`re`, `jew`): `npm run typecheck:re`, `npm run typecheck:jew`, `npm run build:public`
+- Fix failures before continuing. Stop and report if blocked.
+
+## 3. Review
+
+- Inspect full diff and staged files before commit.
+- **Never** commit or push: `.env`, `.env.local`, `PROJECT_CREDENTIALS.txt`, SSH keys, database dumps, `node_modules`, `.next`, `dist`, `backups/`, deploy artifacts, or other secrets.
+- Do not push unrelated changes without reviewing them.
+
+## 4. Commit
+
+- After tests pass, create a **meaningful local commit** for the verified deployment changes.
+- Do **not** create an empty commit if everything is already committed.
+- Do not amend history or force-push without explicit user approval.
+- User may authorize deploy in the same message; deployment still requires push success below.
+
+## 5. Push (GitHub backup)
+
+- Push to **`origin` `main`** (preserve existing remote history).
+- Never force-push, rewrite history, or overwrite remote work.
+- If local and remote history conflict, **stop and report** — do not merge/rebase destructively without approval.
+
+### If push fails
+
+If push fails (e.g. `Permission denied (publickey)` or other auth/remote errors):
+
+- Do **not** repeatedly retry SSH or spend time troubleshooting credentials in the agent session.
+- Do **not** claim GitHub backup succeeded.
+- Report: local commit hash exists, **remote backup is incomplete**.
+- **Do not deploy to production until GitHub push succeeds.**
+- Wait for the user to fix authentication; then push and continue from verify backup.
+
+## 6. Verify backup
+
+- Confirm `origin/main` contains the intended commit (e.g. `git log origin/main -1`, or `git fetch origin` then compare to `HEAD`).
+- Only proceed to deploy when verification shows the pushed commit on the remote.
+
+## 7. Deploy
+
+- Use `deployment/deploy.ps1` with explicit **`-BuildTargets`** matching the user request only.
+  - ERP default when unspecified: `admin,api`
+  - Public sites: include `re` and/or `jew` (or `all`) — do not restart public PM2 apps unless targeted.
 - Pass `-SkipDbMigrate` when no approved schema change; `deploy.ps1` sets `SKIP_DB_SEED=1` by default.
+- Do **not** run database migrations, seeds, or destructive schema/data operations without separate approval.
+- Preserve production `.env` files and business data on the VPS (install scripts preserve existing env by design).
 - Remote install must fail closed: non-zero exit if build, SSH, or `verify-deploy.sh` fails.
-- Success requires `logs/last-deploy-build.ok` and PM2 online for requested targets — not merely an old API health 200.
-- Stale paths: only `deployment/scripts/removed-src-paths.txt` via `prune-stale-paths.sh` (`DRY_RUN=1` to inspect).
+- Success requires `logs/last-deploy-build.ok` and PM2 **online** for requested targets — not an stale health check alone.
+- Stale paths: only via `deployment/scripts/removed-src-paths.txt` and `prune-stale-paths.sh` (`DRY_RUN=1` to inspect).
 
-## After deploy
+## 8. Verify production
 
-- Verify API health, PM2 for `jkbalaji-admin` and `jkbalaji-api`, admin billing pages, and that public PM2 apps were not restarted unless targeted.
-- Report actual commands, test results, commit hash, push status, and verification evidence.
-- Stop and report blockers; never claim deploy success without verification.
+- API health (when `api` or `admin` deployed): e.g. `/api/v1/health` returns 200.
+- PM2: requested apps online (`jkbalaji-admin`, `jkbalaji-api`, `jkbalaji-realestate`, `jkbalaji-jewellery` as applicable).
+- Spot-check affected functionality (admin, billing, public routes) with evidence — do not claim success without verification.
 
-See `docs/GIT-BACKUP.md` and `docs/LIVE-ARCHITECTURE.md`.
+## 9. Report
+
+Provide:
+
+- Test and build results
+- Commit hash and **GitHub push status** (success or blocked)
+- Deployment commands, targets, and **verification evidence**
+- Any remaining issues or manual steps
+
+See also `docs/GIT-BACKUP.md` and `docs/LIVE-ARCHITECTURE.md`.

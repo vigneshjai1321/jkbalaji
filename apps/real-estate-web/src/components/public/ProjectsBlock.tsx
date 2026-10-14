@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SiteImage } from '@/components/site/SiteImage';
 
 type Project = {
   id: string;
@@ -20,10 +21,10 @@ const phaseLabel: Record<string, string> = {
 };
 
 function enquireHref(project: Project) {
-  if (project.slug.startsWith('jk-nagar-phase-')) {
-    return `/jk-nagar#${project.slug.replace('jk-nagar-', '')}`;
-  }
-  return `/?project=${encodeURIComponent(project.slug)}#contact`;
+  if (project.slug === 'jk-nagar-phase-1') return '/jk-nagar/phase-1';
+  if (project.slug === 'jk-nagar-phase-2') return '/jk-nagar/phase-2';
+  if (project.slug === 'jk-nagar-phase-3') return '/jk-nagar/phase-3';
+  return `/contact?project=${encodeURIComponent(project.slug)}`;
 }
 
 export function ProjectsBlock({ projects }: { projects: Project[] }) {
@@ -43,14 +44,15 @@ export function ProjectsBlock({ projects }: { projects: Project[] }) {
               return (
                 <article key={project.id} className="reveal flex flex-col rounded-2xl bg-white border border-emerald-100 overflow-hidden shadow-sm">
                   {project.coverImage ? (
-                    <img
-                      src={project.coverImage}
-                      alt={`${project.name} project`}
-                      width={640}
-                      height={320}
-                      className="h-40 w-full object-cover"
-                      loading="lazy"
-                    />
+                    <div className="relative h-40 w-full bg-slate-100">
+                      <SiteImage
+                        src={project.coverImage}
+                        alt={`${project.name} project`}
+                        fill
+                        sizes="(max-width:768px) 100vw, 33vw"
+                        className="object-cover"
+                      />
+                    </div>
                   ) : null}
                   <div className="flex flex-1 flex-col p-5">
                     <span className="text-xs font-semibold tracking-wide text-emerald-700">{status}</span>

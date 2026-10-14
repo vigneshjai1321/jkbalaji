@@ -7,6 +7,8 @@ import { PublicModule } from './modules/public/public.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
 import { GoldApiModule } from './modules/goldapi/goldapi.module.js';
+import { KjplModule } from './modules/kjpl/kjpl.module.js';
+import { MarketRatesModule } from './modules/market-rates/market-rates.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
 
 @Module({
@@ -15,6 +17,8 @@ import { MailModule } from './modules/mail/mail.module.js';
     DatabaseModule,
     MailModule,
     GoldApiModule,
+    KjplModule,
+    MarketRatesModule,
     AuthModule,
     HealthModule,
     PublicModule,

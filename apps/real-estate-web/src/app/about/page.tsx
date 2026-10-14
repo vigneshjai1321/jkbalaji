@@ -1,20 +1,35 @@
+import type { Metadata } from 'next';
+import { SiteImage } from '@/components/site/SiteImage';
+import { RealEstatePageShell } from '@/components/realestate/RealEstatePageShell';
+import { realEstateImages } from '@/lib/site-images';
+import { RE_ROUTES } from '@/lib/site-routes';
 import Link from 'next/link';
-import { LegalPageChrome } from '@/components/site/LegalPageChrome';
+
+export const metadata: Metadata = {
+  title: 'About Us | JK Balaji Real Estate',
+  description: 'JK Balaji Real Estate — verified plots and layouts around Cheyyar and Tamil Nadu.',
+  alternates: { canonical: 'https://jkbalaji.in/about' },
+};
 
 export default function AboutPage() {
   return (
-    <LegalPageChrome>
-    <main className="min-h-screen bg-slate-50 px-4 py-10 md:px-8">
-      <div className="mx-auto max-w-3xl prose prose-slate">
-        <h1>About JK Balaji Real Estate</h1>
-        <p>
-          We develop and sell residential plots and layouts around Cheyyar with transparent documentation and site support.
-        </p>
-        <Link href="/" className="text-emerald-700 underline">
-          View Properties
-        </Link>
+    <RealEstatePageShell>
+      <div className="re-container py-10 md:py-14 grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <p className="re-eyebrow">About Us</p>
+          <h1 className="re-heading mt-2">Plots and Layouts You Can Trust</h1>
+          <p className="re-subheading mt-4">
+            We help families and investors find verified plots around Cheyyar and Tamil Nadu — with clear documentation,
+            honest pricing, and support from site visit to registration.
+          </p>
+          <Link href={RE_ROUTES.contact} className="inline-flex mt-8 rounded-xl bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">
+            Enquire now
+          </Link>
+        </div>
+        <div className="rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-200/80 relative aspect-[4/3]">
+          <SiteImage src={realEstateImages.about} alt="JK Balaji real estate developments" fill sizes="(max-width:768px) 100vw, 50vw" />
+        </div>
       </div>
-    </main>
-    </LegalPageChrome>
+    </RealEstatePageShell>
   );
 }

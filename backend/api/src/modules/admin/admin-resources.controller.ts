@@ -1,6 +1,12 @@
 import { Body, Controller, ConflictException, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { UserRole } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+
+const PROJECT_EDITORS = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.REAL_ESTATE_MANAGER] as const;
+const JEWELLERY_EDITORS = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.GOLD_MANAGER] as const;
 
 @Controller({ path: 'admin', version: '1' })
 @UseGuards(JwtAuthGuard)
@@ -16,6 +22,8 @@ export class AdminResourcesController {
   }
 
   @Patch('projects/:id')
+  @UseGuards(RolesGuard)
+  @Roles(...PROJECT_EDITORS)
   updateProject(@Param('id') id: string, @Body() body: Record<string, unknown>) {
     return this.prisma.project.update({ where: { id }, data: body as never });
   }
@@ -42,11 +50,15 @@ export class AdminResourcesController {
   }
 
   @Patch('properties/:id')
+  @UseGuards(RolesGuard)
+  @Roles(...PROJECT_EDITORS)
   updateProperty(@Param('id') id: string, @Body() body: Record<string, unknown>) {
     return this.prisma.property.update({ where: { id }, data: body as never });
   }
 
   @Delete('properties/:id')
+  @UseGuards(RolesGuard)
+  @Roles(...PROJECT_EDITORS)
   async deleteProperty(@Param('id') id: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -66,11 +78,15 @@ export class AdminResourcesController {
   }
 
   @Patch('products/:id')
+  @UseGuards(RolesGuard)
+  @Roles(...JEWELLERY_EDITORS)
   updateProduct(@Param('id') id: string, @Body() body: Record<string, unknown>) {
     return this.prisma.jewelleryProduct.update({ where: { id }, data: body as never });
   }
 
   @Delete('products/:id')
+  @UseGuards(RolesGuard)
+  @Roles(...JEWELLERY_EDITORS)
   deleteProduct(@Param('id') id: string) {
     return this.prisma.jewelleryProduct.delete({ where: { id } });
   }

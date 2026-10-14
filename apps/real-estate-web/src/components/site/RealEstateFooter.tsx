@@ -20,13 +20,23 @@ export function RealEstateFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/#properties" className="hover:text-white transition-colors">
+              <Link href="/properties" className="hover:text-white transition-colors">
                 Properties
               </Link>
             </li>
             <li>
-              <Link href="/#projects" className="hover:text-white transition-colors">
+              <Link href="/projects" className="hover:text-white transition-colors">
                 Projects
+              </Link>
+            </li>
+            <li>
+              <Link href="/gallery" className="hover:text-white transition-colors">
+                Gallery
+              </Link>
+            </li>
+            <li>
+              <Link href="/location" className="hover:text-white transition-colors">
+                Location
               </Link>
             </li>
             <li>
@@ -40,12 +50,12 @@ export function RealEstateFooter() {
           <p className="re-footer-heading">Support</p>
           <ul className="mt-4 space-y-2 text-sm">
             <li>
-              <Link href="/#contact" className="hover:text-white transition-colors">
+              <Link href="/contact" className="hover:text-white transition-colors">
                 Enquire
               </Link>
             </li>
             <li>
-              <Link href="/#faq" className="hover:text-white transition-colors">
+              <Link href="/faq" className="hover:text-white transition-colors">
                 FAQ
               </Link>
             </li>

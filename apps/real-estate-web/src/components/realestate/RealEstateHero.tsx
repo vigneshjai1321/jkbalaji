@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { PublicAssetImg } from '@/components/site/PublicAssetImg';
+import { resolvePublicAssetUrl } from '@/lib/site-asset-url';
 import { realEstateImages } from '@/lib/site-images';
 import { JK_BALAJI_RE } from '@/lib/real-estate-business';
 import { Search, MapPin } from 'lucide-react';
 
 const KEYWORDS = ['Residential Plots', 'JK Nagar Layouts', 'Villas', 'Farm Land', 'Commercial Land'];
 
-const slides = realEstateImages.heroSlides ?? [realEstateImages.hero];
+const slides = (realEstateImages.heroSlides ?? [realEstateImages.hero]).map(resolvePublicAssetUrl);
 
 export function RealEstateHero() {
   const [slide, setSlide] = useState(0);
@@ -35,7 +37,7 @@ export function RealEstateHero() {
     <section className="relative overflow-hidden bg-slate-900 text-white">
       <div className="absolute inset-0">
         {slides.map((src, i) => (
-          <img
+          <PublicAssetImg
             key={src}
             src={src}
             alt={i === slide ? 'Residential property and land development in Tamil Nadu' : ''}

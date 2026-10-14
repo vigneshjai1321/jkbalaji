@@ -1,5 +1,6 @@
 'use client';
 
+import { PublicAssetImg } from '@/components/site/PublicAssetImg';
 import { jewelleryImages } from '@/lib/site-images';
 import { SRI_BALAJI } from '@/lib/jewellery-business';
 
@@ -7,7 +8,7 @@ export function JewelleryHero() {
   return (
     <section id="home" className="relative pt-[4.25rem] overflow-hidden">
       <div className="relative min-h-[min(520px,78vh)] max-h-[560px] flex items-center">
-        <img
+        <PublicAssetImg
           src={jewelleryImages.hero}
           alt="Illustrative premium gold jewellery display"
           className="absolute inset-0 h-full w-full object-cover"
