@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Deployment and GitHub backup safety
 
-GitHub (`git@github.com:vigneshjai1321/jkbalaji.git`) is **source backup only** — never add GitHub Actions, CI/CD, or auto-deploy from push.
+GitHub (`https://github.com/vigneshjai1321/jkbalaji.git`) is **source backup only** — never add GitHub Actions, CI/CD, or auto-deploy from push.
 
 **Required workflow for every deployment:**
 
@@ -42,24 +42,25 @@ Do not skip steps. Do not deploy if GitHub push did not succeed.
 
 ## 5. Push (GitHub backup)
 
-- Push to **`origin` `main`** (preserve existing remote history).
+- Push to **`main`** on GitHub using the **HTTPS remote** and the machine’s existing credential mechanism (Windows Credential Manager, GitHub Desktop, etc.).
+- Preferred remote URL: `https://github.com/vigneshjai1321/jkbalaji.git` (no tokens in the URL, scripts, or repo).
 - Never force-push, rewrite history, or overwrite remote work.
 - If local and remote history conflict, **stop and report** — do not merge/rebase destructively without approval.
+- **Do not require or troubleshoot GitHub SSH** for backup: do not retry SSH keys, create deploy keys, or change SSH config just to push source backups.
 
 ### If push fails
 
-If push fails (e.g. `Permission denied (publickey)` or other auth/remote errors):
+If HTTPS push fails (auth, network, or remote errors):
 
-- Do **not** repeatedly retry SSH or spend time troubleshooting credentials in the agent session.
 - Do **not** claim GitHub backup succeeded.
 - Report: local commit hash exists, **remote backup is incomplete**.
 - **Do not deploy to production until GitHub push succeeds.**
-- Wait for the user to fix authentication; then push and continue from verify backup.
+- Ask the user to fix HTTPS sign-in (Desktop / browser / credential manager); do not embed PATs in commands or files.
 
 ## 6. Verify backup
 
-- Confirm `origin/main` contains the intended commit (e.g. `git log origin/main -1`, or `git fetch origin` then compare to `HEAD`).
-- Only proceed to deploy when verification shows the pushed commit on the remote.
+- Confirm the remote contains the intended commit, e.g. `git ls-remote https://github.com/vigneshjai1321/jkbalaji.git refs/heads/main` and compare to `HEAD`.
+- Only proceed to deploy when verification shows the pushed commit on GitHub.
 
 ## 7. Deploy
 
@@ -70,7 +71,7 @@ If push fails (e.g. `Permission denied (publickey)` or other auth/remote errors)
 - Do **not** run database migrations, seeds, or destructive schema/data operations without separate approval.
 - Preserve production `.env` files and business data on the VPS (install scripts preserve existing env by design).
 - Remote install must fail closed: non-zero exit if build, SSH, or `verify-deploy.sh` fails.
-- Success requires `logs/last-deploy-build.ok` and PM2 **online** for requested targets — not an stale health check alone.
+- Success requires `logs/last-deploy-build.ok` and PM2 **online** for requested targets — not a stale health check alone.
 - Stale paths: only via `deployment/scripts/removed-src-paths.txt` and `prune-stale-paths.sh` (`DRY_RUN=1` to inspect).
 
 ## 8. Verify production

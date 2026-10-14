@@ -11,10 +11,12 @@ export function ContactLeadForm({
   leadType = 'GENERAL_CONTACT',
   sourcePage,
   schemeAmountInr,
+  submitLabel = 'Submit Enquiry',
 }: {
   leadType?: string;
   sourcePage?: string;
   schemeAmountInr?: number;
+  submitLabel?: string;
 }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -118,7 +120,7 @@ export function ContactLeadForm({
         disabled={submitting}
         className="rounded-lg text-white px-4 py-2 font-medium disabled:opacity-60 bg-amber-700 hover:bg-amber-800"
       >
-        {submitting ? 'Submitting…' : 'Submit Enquiry'}
+        {submitting ? 'Submitting…' : submitLabel}
       </button>
       {status === 'ok' ? (
         <p className="text-sm text-emerald-700 font-medium" role="status">

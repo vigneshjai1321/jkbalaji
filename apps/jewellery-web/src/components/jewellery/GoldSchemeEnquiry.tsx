@@ -77,7 +77,12 @@ export function GoldSchemeEnquiry() {
         <h3 className="font-semibold text-stone-900">Enquire about the scheme</h3>
         <p className="mt-2 text-sm text-stone-600">Our team will call you with approved plan details. No online payment on this form.</p>
         {amountValid ? (
-          <ContactLeadForm leadType="GOLD_SCHEME_ENQUIRY" sourcePage="/gold-schemes" schemeAmountInr={effective} />
+          <ContactLeadForm
+            leadType="GOLD_SCHEME_ENQUIRY"
+            sourcePage="/gold-schemes"
+            schemeAmountInr={effective}
+            submitLabel="Enquire About Gold Scheme"
+          />
         ) : (
           <p className="mt-6 text-sm text-stone-500">Fix the amount above to submit.</p>
         )}

@@ -2,9 +2,19 @@
 
 Git and GitHub are for **private source backup**, checkpoints, and restore. Production deploy is unchanged: `deployment/deploy.ps1` to the VPS when you approve it manually.
 
-- Remote: `git@github.com:vigneshjai1321/jkbalaji.git`
+- Remote (HTTPS): `https://github.com/vigneshjai1321/jkbalaji.git`
 - Branch: `main`
 - Local identity: `Vignesh GJ` / `vigneshjai1321@gmail.com` (repo-local config)
+
+## Point `origin` at HTTPS (recommended)
+
+```powershell
+cd E:\JKbalaji
+git remote set-url origin https://github.com/vigneshjai1321/jkbalaji.git
+git remote -v
+```
+
+SSH is **not** required for backup. Do not put personal access tokens in the remote URL.
 
 ## Save a checkpoint (local)
 
@@ -23,6 +33,13 @@ Review `git status` before `git add`. Never stage `PROJECT_CREDENTIALS.txt` or r
 ```powershell
 cd E:\JKbalaji
 git push -u origin main
+```
+
+Verify the remote received your commit:
+
+```powershell
+git ls-remote origin refs/heads/main
+git rev-parse HEAD
 ```
 
 First push: remote should be empty (no force-push). If GitHub already has commits, stop and reconcile histories manually—do not `git push --force`.
@@ -48,15 +65,13 @@ git restore --source=<commit-hash> -- path/to/file.tsx
 ```powershell
 git stash push -m "before restore"
 git checkout <commit-hash> -- .
-# or move branch pointer (only if you understand the effect):
-# git reset --hard <commit-hash>
 ```
 
 Prefer `git checkout <commit> -- .` or new branch from old commit for experiments: `git switch -c try-old <commit-hash>`.
 
 ## GitHub authentication
 
-- **SSH:** Add `C:\Users\vigne\.ssh\id_ed25519.pub` to GitHub → Settings → SSH keys; test with `ssh -T git@github.com`.
-- **GitHub Desktop:** File → Add local repository → `E:\JKbalaji` → publish/push using Desktop sign-in (HTTPS); no tokens in chat.
+- **HTTPS (default):** Sign in via **GitHub Desktop** (File → Add local repository → `E:\JKbalaji` → Push) or Git Credential Manager when `git push` prompts in the browser. No tokens in chat or committed files.
+- **SSH:** Optional for your own machine only; **not required** for this project’s backup workflow.
 
 Do not use GitHub Actions to deploy this app.

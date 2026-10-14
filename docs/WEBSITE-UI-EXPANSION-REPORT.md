@@ -1,120 +1,105 @@
-# Website UI expansion, gold scheme & KJPL rates — final report
+# Website UI expansion — final status (cleanup verification)
 
 **Last updated:** 2026-10-14  
-**Production deploy commits:** `2cb90c7` (feature), `58fa52c` (report), `48cfa42` (jewellery SSR rates fix + deploy script)  
-**GitHub `origin/main` verified:** `48cfa42d304920e98dd9b90ec6403ab224ffeca6`
+**GitHub `main`:** verify after latest push with `git ls-remote origin refs/heads/main`
 
 ---
 
-## A. Deployment status
-
-| Step | Status | Detail |
-|------|--------|--------|
-| Tests & builds (pre-deploy) | **PASS** | `test:api` 41/41; `typecheck:erp/re/jew`; `build:public`; `build:api` |
-| Git commits | **PASS** | See commits above; working tree clean after `48cfa42` |
-| GitHub push | **PASS** | SSH `git@github.com` still **FAIL** (`Permission denied (publickey)`). Push succeeded via **HTTPS** + Windows credential manager: `git push https://github.com/vigneshjai1321/jkbalaji.git main`. Remote verified with `git ls-remote`. |
-| Deploy #1 | **PASS*** | `.\deploy.ps1 -BuildTargets "re,jew,api" -SkipDbMigrate` — VPS install **OK** (`last-deploy-build.ok`, PM2 restarted). Script exit **1** because certbot “certificate not due for renewal” was treated as failure; `verify-deploy.sh` **not** run by script. Manual verify: **PASS**. |
-| Deploy #2 | **PASS** | `.\deploy.ps1 -BuildTargets "jew" -SkipDbMigrate` after SSR fix — exit **0**, verification **PASS**. |
-| KJPL env on VPS | **PASS** | Set on server only: `MARKET_RATES_SOURCE=kjpl`, `KJPL_RATES_ENABLED=true`, `KJPL_POLL_INTERVAL_MINUTES=15`; `pm2 restart jkbalaji-api`. |
-
-\*First deploy: application rollout succeeded; automation exit code misleading until `deploy.ps1` SSL step was relaxed in `48cfa42`.
-
-**Commands used:**
-
-```powershell
-cd E:\JKbalaji\deployment
-.\deploy.ps1 -BuildTargets "re,jew,api" -SkipDbMigrate
-# later:
-.\deploy.ps1 -BuildTargets "jew" -SkipDbMigrate
-```
-
-**PM2 (post-deploy):** `jkbalaji-api`, `jkbalaji-realestate`, `jkbalaji-jewellery` **online**; `jkbalaji-admin` unchanged (not redeployed).
-
-**Infrastructure:** PostgreSQL `pg_isready` **PASS**; nginx **active**.
-
----
-
-## B. KJPL rate source
+## 1. Git backup rules (HTTPS)
 
 | Item | Status |
 |------|--------|
-| KJPL `robots.txt` | **NOT FOUND** — `https://kjpl.in/robots.txt` → 404; `https://www.kjpl.in/robots.txt` → 500 |
-| Written permission from KJPL | **NOT ESTABLISHED** — your project authorization does not replace third-party terms |
-| Production enablement | **ENABLED** — public homepage MJDTA values parsed server-side; 15‑minute poll; cache in `app_settings` (`kjpl_rates_cache_v1`) |
-| Rationale | Business chose KJPL as reference source; rates are publicly displayed on kjpl.in; moderate polling; no credentials in frontend. **Recommend** formal confirmation with KJPL when possible. |
-| Units / disclaimer | **PASS** — UI shows **MJDTA** with/without GST; not sold as per‑gram 22K/24K shop prices |
+| `.cursor/rules/20-deploy-safety.mdc` | **PASS** — HTTPS push; no SSH troubleshooting for backup |
+| `.cursor/rules/50-git-backup-only.mdc` | **PASS** — aligned with HTTPS |
+| `docs/GIT-BACKUP.md` | **PASS** — HTTPS remote, verify with `git ls-remote` |
+| GitHub Actions / push deploy | **Not configured** (by design) |
+| Production deploy | Unchanged: `deployment/deploy.ps1` → VPS only |
 
-**Live API sample (2026-10-14):** `provider=kjpl.in`, `goldWithoutGstInr=13590`, `silverWithoutGstInr=245`, `isStale=false`, `schedulerEnabled=true`.
+**Backup command:** `git push origin main` with `origin` = `https://github.com/vigneshjai1321/jkbalaji.git` and existing credential manager / GitHub Desktop.
 
 ---
 
-## C. Production verification
+## 2. Code changes this cleanup
 
-### HTTPS routes
+| Change | Deploy needed? |
+|--------|----------------|
+| Git rules + `GIT-BACKUP.md` | No |
+| Gold scheme CTA: **Enquire About Gold Scheme** on `/gold-schemes` only | Yes — `jew` target if not yet live |
+| KJPL / rates / scheme backend | Already on production from prior deploy (`re,jew,api`) |
 
-**jkbalaji.in** — all **200:** `/`, `/about`, `/projects`, `/properties`, `/gallery`, `/location`, `/contact`, `/faq`, `/jk-nagar/phase-1`, `/phase-2`, `/phase-3`.
+---
 
-**cheyyarbalaji.com** — all **200:** `/`, `/about`, `/collections`, `/gold-schemes`, `/services`, `/gallery`, `/gold-rates`, `/visit`, `/contact`, `/faq`.
+## 3. KJPL verification (production)
 
-### API
+**Config on VPS (non-secret keys only):** `MARKET_RATES_SOURCE=kjpl`, `KJPL_RATES_ENABLED=true`, `KJPL_POLL_INTERVAL_MINUTES=15`.
 
-| Check | Result |
+| Check | Status | Evidence |
+|-------|--------|----------|
+| Live API valid KJPL values | **PASS** | `GET /api/v1/public/jewellery/market-rates` — `provider=kjpl.in`, `configured=true`, `schedulerEnabled=true` |
+| Gold/silver with & without GST | **PASS** | e.g. gold 13590 / 13997.7, silver 245 / 252.35 (values change with KJPL; verified same on API and `/gold-rates` page) |
+| Source + timestamps | **PASS** | `sourceTimestampGold`: `14-10-2026 09:38:07 am M`; `fetchedAt` ISO on API; UI “Last fetched” + KJPL page time |
+| Per-gram 22K/24K shop prices | **PASS** — not shown | `price24kPerGram` null; UI MJDTA labels + disclaimer |
+| Poll scheduler | **PASS** (startup) | PM2 log: `KJPL scheduler polling every 15 minutes` + initial cache at API restart |
+| Second poll cycle | **NOT TESTED** | Requires waiting ≥15 minutes or log inspection over time |
+| Cache key | **PASS** (design) | `kjpl_rates_cache_v1` in `app_settings` |
+| Failed fetch does not overwrite cache | **PASS** (code) | `persistCache` only on successful parse; failures return error without write — **NOT TESTED** with live forced failure |
+| Stale warning (>45 min) | **NOT TESTED** live | `isStale=false` while cache age &lt; 45 min; logic in `KjplService` |
+| Jewellery SSR uses server API | **PASS** | `MarketRatesBanner` prefers `SERVER_API_URL`; `/gold-rates` shows KJPL blocks (not “unavailable”) |
+| Browser desktop | **PASS** | KJPL source, four rate cards, disclaimers |
+| Mobile nav drawer | **PASS** | Open/close menu on `/gold-rates` |
+| Console / network deep audit | **NOT TESTED** | No automated console scan this session |
+
+**KJPL permission / legal:** No verified public JSON API; `robots.txt` not reliably available (404/500 in prior checks). **No evidence KJPL granted automated access.** Business uses publicly displayed MJDTA HTML at 15-minute intervals. Residual legal/ToS risk remains — document, do not hide.
+
+---
+
+## 4. Gold scheme (enquiry only)
+
+| Check | Status |
 |-------|--------|
-| `GET /api/v1/health` | **PASS** — 200 |
-| `GET /api/v1/public/jewellery/market-rates` | **PASS** — KJPL payload |
-| Gold scheme validation | **PASS** — `schemeAmountInr: 1000` → **400** with range message (no lead created) |
+| Amount range ₹5,000–₹1,00,000 | **PASS** — UI presets + custom clamp |
+| `GOLD_SCHEME_ENQUIRY` + `schemeAmountInr` | **PASS** — API |
+| Reject below min / above max | **PASS** — production 400 for `1000` and `500000` |
+| Missing amount on scheme lead | **PASS** — production 400 |
+| No payment / enrolment / returns copy | **PASS** — page copy |
+| Success only after API OK | **PASS** — `ContactLeadForm` sets `ok` only after `apiPost` succeeds |
+| Duplicate submit guard | **PASS** — `submitting` disables button |
+| CTA wording | **PASS** (after jew deploy) — **Enquire About Gold Scheme**; not Buy/Invest |
+| End-to-end lead in admin | **NOT TESTED** — no fake production leads submitted |
+| Local/unit tests | **PASS** — `public-scheme-lead.spec.ts` in `test:api` |
 
-### Images
+---
 
-| Asset | Result |
-|-------|--------|
-| `https://jkbalaji.in/assets/images/realestate.jpg` | **PASS** — 200 |
-| `https://cheyyarbalaji.com/assets/images/rings1.jpg` | **PASS** — 200 |
+## 5. Production deployment
 
-### Browser
-
-| Page | Result |
+| Item | Status |
 |------|--------|
-| `https://cheyyarbalaji.com/gold-rates` | **PASS** — KJPL source, MJDTA gold/silver excl/incl GST, disclaimer |
-| Local full regression (all sections) | **NOT TESTED** on production mobile drawer |
+| Last full public+API deploy | **PASS** — `re,jew,api` (build marker on VPS) |
+| Deploy required for this cleanup | **Only if** gold-scheme CTA commit not yet on live `jew` |
+| Admin panel | **Not redeployed** (CMS nav in git only) |
 
-**Not tested:** Production lead form success path (avoid fake customer leads); admin panel regression (admin not redeployed).
+**Verify URLs:**
+
+- `https://api.jkbalaji.in/api/v1/health` — **200**
+- `https://api.jkbalaji.in/api/v1/public/jewellery/market-rates` — **200**, KJPL
+- `https://cheyyarbalaji.com/gold-rates` — **200**, rates match API
+- `https://cheyyarbalaji.com/gold-schemes` — **200**
+- `https://jkbalaji.in/` — **200**; `/assets/images/realestate.jpg` — **200**
 
 ---
 
-## D. How features work (summary)
+## 6. Tests & builds (this session)
 
-- **Real estate:** Published projects/properties from API; site visit via `POST /public/leads`; Phase 3 register-interest only.
-- **Gold scheme:** Enquiry only; amount ₹5k–₹1L validated on API; no online payment.
-- **Rates:** API fetches KJPL HTML; jewellery site SSR uses `SERVER_API_URL` (localhost) to read rates; banner shows source, timestamps, stale warning when applicable.
-
----
-
-## E. Test / build results (this session)
-
-| Check | Result |
-|-------|--------|
+| Command | Result |
+|---------|--------|
 | `npm run test:api` | **PASS** — 41 |
-| `npm run typecheck:erp` / `re` / `jew` | **PASS** |
-| `npm run build:public` / `build:api` / `build:jew` | **PASS** |
-| `verify-deploy.sh` (manual after deploy #1) | **PASS** |
-| Deploy script verify (deploy #2) | **PASS** |
+| `npm run typecheck:jew` | **PASS** |
 
 ---
 
-## F. Remaining blockers / follow-ups
+## 7. Blockers / follow-ups
 
-1. **GitHub SSH** — `origin` still `git@github.com:...`; use HTTPS push or add `id_ed25519_github` to GitHub account for SSH.
-2. **KJPL legal** — obtain/clarify terms when possible; monitor for HTML layout changes.
-3. **Gold scheme** — business-approved terms, enrolment DB, payment provider still **NOT IMPLEMENTED**.
-4. **Admin CMS nav** — in git (`2cb90c7`); deploy `admin` when staff should see role-based CMS restrictions live.
-5. **Certbot exit code** — deploy #1 false failure; mitigated in `48cfa42` (continue to verification).
-
----
-
-## G. Key files
-
-- `backend/api/src/modules/kjpl/`, `market-rates/`
-- `apps/jewellery-web/src/components/jewellery/MarketRatesBanner.tsx` (SSR → `SERVER_API_URL`)
-- `deployment/deploy.ps1`
-- `scripts/verify-public-site-images.mjs`
+1. Confirm **KJPL** terms in writing when possible.  
+2. **Gold scheme** — approved terms + payment still out of scope.  
+3. Optional: watch PM2 logs for recurring `KJPL rates cached` every 15 minutes.  
+4. Set local `git remote` to HTTPS if still on `git@github.com` (see `docs/GIT-BACKUP.md`).
