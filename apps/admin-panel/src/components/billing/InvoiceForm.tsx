@@ -595,9 +595,6 @@ export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0,
           </div>
         ))}
       </div>
-      {lines.every((l) => !l.description.trim()) ? (
-        <p className="text-sm text-stone-500 mt-3">No items yet — use Add item to enter jewellery lines.</p>
-      ) : null}
       {fieldErrors.lines ? (
         <p className="text-xs text-red-600 mt-2" role="alert">
           {fieldErrors.lines}
