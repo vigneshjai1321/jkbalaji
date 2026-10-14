@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SRI_BALAJI } from '@/lib/jewellery-business';
+import { SITE_DEVELOPER_CREDIT, SRI_BALAJI } from '@/lib/jewellery-business';
 import { JW_ROUTES } from '@/lib/site-routes';
 
 const QUICK = [
@@ -62,6 +62,11 @@ export function JewelleryFooter() {
                 </a>
               </li>
               <li>
+                <a href={`mailto:${SRI_BALAJI.email}`} className="text-amber-200/90 hover:text-amber-100 break-all">
+                  {SRI_BALAJI.email}
+                </a>
+              </li>
+              <li>
                 Scheme:{' '}
                 <a href={SRI_BALAJI.schemeTel} className="text-amber-200/90 hover:text-amber-100">
                   {SRI_BALAJI.schemePhoneDisplay}
@@ -78,17 +83,27 @@ export function JewelleryFooter() {
         </div>
       </div>
       <div className="border-t border-stone-800 py-3">
-        <div className="jw-container flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-stone-500">
+        <div className="jw-container flex flex-col gap-2 text-xs text-stone-500">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p>© {year} {SRI_BALAJI.name}</p>
+            <p className="flex gap-3">
+              <Link href={JW_ROUTES.privacy} className="hover:text-stone-300">
+                Privacy
+              </Link>
+              <Link href={JW_ROUTES.terms} className="hover:text-stone-300">
+                Terms
+              </Link>
+            </p>
+          </div>
           <p>
-            © {year} {SRI_BALAJI.name} · {SRI_BALAJI.legalEntity}
-          </p>
-          <p className="flex gap-3">
-            <Link href={JW_ROUTES.privacy} className="hover:text-stone-300">
-              Privacy
-            </Link>
-            <Link href={JW_ROUTES.terms} className="hover:text-stone-300">
-              Terms
-            </Link>
+            <a
+              href={SITE_DEVELOPER_CREDIT.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-stone-600 hover:text-stone-400 transition-colors"
+            >
+              {SITE_DEVELOPER_CREDIT.label}
+            </a>
           </p>
         </div>
       </div>

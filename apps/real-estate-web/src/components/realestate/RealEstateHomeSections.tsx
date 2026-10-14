@@ -9,7 +9,6 @@ import { RE_ROUTES } from '@/lib/site-routes';
 type Project = Parameters<typeof ProjectsBlock>[0]['projects'];
 
 export function FeaturedProjectsSection({ projects }: { projects: Project }) {
-  if (!projects.length) return null;
   return <ProjectsBlock projects={projects} />;
 }
 

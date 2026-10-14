@@ -10,7 +10,7 @@ export const SRI_BALAJI = {
   schemeTel: 'tel:+914182220671',
   experience: 'Over 10 years of service in the Cheyyar region',
   gstNote: 'GST-compliant business',
-  legalEntity: 'Jamavisa Enterprises Private Limited',
+  email: 'tmlcheyyar@gmail.com',
   url: 'https://cheyyarbalaji.com',
   proprietors: [
     { name: 'Jayakumar', role: 'Proprietor' },
@@ -25,4 +25,10 @@ export const SRI_BALAJI = {
   directionsUrl:
     'https://www.google.com/maps/dir/?api=1&destination=Sri+Balaji+Jewellers+Gandhi+Road+Cheyyar',
   whatsappNumber: '919943541435',
+} as const;
+
+/** Sole permitted Jamavisa branding — footer developer credit only. */
+export const SITE_DEVELOPER_CREDIT = {
+  label: 'Designed & Developed by Jamavisa Enterprises Private Limited',
+  href: 'https://jamavisa.in',
 } as const;

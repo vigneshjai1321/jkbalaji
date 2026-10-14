@@ -90,7 +90,7 @@ export default async function RealEstateHome() {
       <FeaturedProjectsSection projects={projects} />
       <JkNagarPhasesSection />
 
-      <section className="re-section">
+      <section id="properties" className="re-section">
         <div className="re-container">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>

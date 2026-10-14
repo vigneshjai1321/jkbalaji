@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apiPost } from '@/lib/api';
+import { SRI_BALAJI } from '@/lib/jewellery-business';
 
 function validPhone(p: string) {
   return /^[\d+\-\s()]{8,15}$/.test(p);
@@ -64,7 +65,9 @@ export function ContactLeadForm({
       setMessage('');
     } catch {
       setStatus('err');
-      setErrMsg('Could not submit online. Please call +91 99435 41435 or visit our showroom.');
+      setErrMsg(
+        `Could not submit online. Email ${SRI_BALAJI.email} or call ${SRI_BALAJI.phoneDisplay} or visit our showroom.`,
+      );
     } finally {
       setSubmitting(false);
     }

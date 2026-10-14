@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { apiPost } from '@/lib/api';
+import { JK_BALAJI_RE } from '@/lib/real-estate-business';
+import { SRI_BALAJI } from '@/lib/jewellery-business';
 
 type Site = 'REAL_ESTATE' | 'JEWELLERY';
 
@@ -72,8 +74,8 @@ export function ContactLeadForm({
       setStatus('err');
       setErrMsg(
         site === 'JEWELLERY'
-          ? 'Could not submit online. Please call +91 99435 41435 or visit our showroom.'
-          : 'Could not submit online. Email us at jamavisapvt@gmail.com or call the number in the footer.',
+          ? `Could not submit online. Please call ${SRI_BALAJI.phoneDisplay} or visit our showroom.`
+          : `Could not submit online. Email us at ${JK_BALAJI_RE.email} or call ${JK_BALAJI_RE.phoneDisplay}.`,
       );
     } finally {
       setSubmitting(false);

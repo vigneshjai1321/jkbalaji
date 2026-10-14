@@ -10,7 +10,7 @@ export const SRI_BALAJI = {
   schemeTel: 'tel:+914182220671',
   experience: 'Over 10 years of service in the Cheyyar region',
   gstNote: 'GST-compliant business',
-  legalEntity: 'Jamavisa Enterprises Private Limited',
+  email: 'tmlcheyyar@gmail.com',
   url: 'https://cheyyarbalaji.com',
   proprietors: [
     { name: 'Jayakumar', role: 'Proprietor' },

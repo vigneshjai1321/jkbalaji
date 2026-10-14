@@ -34,7 +34,7 @@ export function RealEstateHero() {
   }, []);
 
   return (
-    <section className="relative overflow-hidden bg-slate-900 text-white">
+    <section className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-slate-50 to-white text-slate-900">
       <div className="absolute inset-0">
         {slides.map((src, i) => (
           <PublicAssetImg
@@ -45,39 +45,39 @@ export function RealEstateHero() {
             width={1600}
             height={900}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1000ms] ${
-              i === slide ? 'opacity-100' : 'opacity-0'
+              i === slide ? 'opacity-55 md:opacity-65' : 'opacity-0'
             }`}
             fetchPriority={i === 0 ? 'high' : 'low'}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/92 via-emerald-950/85 to-emerald-900/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-emerald-50/88 to-emerald-100/45 md:from-white/92 md:via-emerald-50/78 md:to-transparent" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 md:py-14 min-h-[min(72vh,620px)] flex flex-col justify-center">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 md:py-12 lg:py-14 min-h-[min(68vh,600px)] flex flex-col justify-center">
         <div className="max-w-2xl">
-          <p className="text-emerald-300/90 text-xs sm:text-sm font-semibold tracking-wide">
+          <p className="text-emerald-800 text-xs sm:text-sm font-semibold tracking-wide uppercase">
             JK Balaji · Tamil Nadu
           </p>
-          <h1 className="mt-3 text-3xl sm:text-4xl md:text-[2.75rem] lg:text-5xl font-bold leading-[1.12] tracking-tight text-white">
+          <h1 className="mt-3 text-3xl sm:text-4xl md:text-[2.75rem] lg:text-5xl font-bold leading-[1.12] tracking-tight text-slate-900">
             Discover{' '}
             <span
-              className={`inline-block text-emerald-300 transition-all duration-300 ${
+              className={`inline-block text-emerald-700 transition-all duration-300 ${
                 anim ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
               }`}
             >
               {KEYWORDS[word]}
             </span>
             <br />
-            <span className="text-white/95">With Confidence</span>
+            <span className="text-slate-800">With Confidence</span>
           </h1>
-          <p className="mt-4 text-base sm:text-lg text-slate-200/90 max-w-xl leading-relaxed">
+          <p className="mt-4 text-base sm:text-lg text-slate-700 max-w-xl leading-relaxed">
             Verified layouts, clear pricing, and help from site visit to registration.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               href="/#properties"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-emerald-900 shadow-lg hover:bg-emerald-50 transition-colors"
+              className="inline-flex items-center justify-center rounded-xl bg-emerald-800 px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-emerald-900 transition-colors"
             >
               View Properties
             </Link>
@@ -85,7 +85,7 @@ export function RealEstateHero() {
               href={`https://wa.me/${JK_BALAJI_RE.whatsappNumber}?text=${encodeURIComponent('JK Balaji property enquiry')}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-xl border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold hover:bg-white/15 transition-colors"
+              className="inline-flex items-center justify-center rounded-xl border border-emerald-800/25 bg-white/90 px-5 py-3 text-sm font-semibold text-emerald-900 hover:bg-white transition-colors shadow-sm"
             >
               WhatsApp
             </a>
@@ -151,7 +151,7 @@ export function RealEstateHero() {
               type="button"
               aria-label={`Background ${i + 1}`}
               onClick={() => setSlide(i)}
-              className={`h-1 rounded-full transition-all ${i === slide ? 'w-8 bg-emerald-400' : 'w-3 bg-white/35'}`}
+              className={`h-1 rounded-full transition-all ${i === slide ? 'w-8 bg-emerald-700' : 'w-3 bg-emerald-900/25'}`}
             />
           ))}
         </div>

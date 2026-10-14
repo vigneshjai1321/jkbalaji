@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { JK_BALAJI_RE } from '@/lib/real-estate-business';
+import { JK_BALAJI_RE, SITE_DEVELOPER_CREDIT } from '@/lib/real-estate-business';
 import { RE_ROUTES } from '@/lib/site-routes';
 
 const QUICK = [
@@ -43,7 +43,7 @@ export function RealEstateFooter() {
           <div className="lg:col-span-4">
             <p className="text-base font-bold text-white tracking-tight">{JK_BALAJI_RE.name}</p>
             <p className="mt-2 text-xs text-slate-400 leading-relaxed max-w-xs">
-              {JK_BALAJI_RE.legalEntity} — verified plots and layouts in Tamil Nadu.
+              Verified plots and layouts across Tamil Nadu — enquiries from Cheyyar.
             </p>
           </div>
           <div className="lg:col-span-4 grid grid-cols-2 gap-6">
@@ -85,15 +85,27 @@ export function RealEstateFooter() {
         </div>
       </div>
       <div className="border-t border-slate-800 py-3">
-        <div className="re-container flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500">
-          <p>© {year} {JK_BALAJI_RE.legalEntity}</p>
-          <p className="flex gap-3">
-            <Link href={RE_ROUTES.privacy} className="hover:text-slate-300">
-              Privacy
-            </Link>
-            <Link href={RE_ROUTES.terms} className="hover:text-slate-300">
-              Terms
-            </Link>
+        <div className="re-container flex flex-col gap-2 text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p>© {year} {JK_BALAJI_RE.name}</p>
+            <p className="flex gap-3">
+              <Link href={RE_ROUTES.privacy} className="hover:text-slate-300">
+                Privacy
+              </Link>
+              <Link href={RE_ROUTES.terms} className="hover:text-slate-300">
+                Terms
+              </Link>
+            </p>
+          </div>
+          <p>
+            <a
+              href={SITE_DEVELOPER_CREDIT.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-600 hover:text-slate-400 transition-colors"
+            >
+              {SITE_DEVELOPER_CREDIT.label}
+            </a>
           </p>
         </div>
       </div>

@@ -1,12 +1,48 @@
 # Website UI expansion — final status
 
 **Last updated:** 2026-10-14  
-**Latest commit:** `ff487a9` — compact inner pages, supporting sections, two-column footers  
-**GitHub `main`:** verified via HTTPS push + `git ls-remote origin refs/heads/main`
+**Latest commit:** _(pending deploy commit)_ — heroes, RE “Our Projects” restore, contact/branding  
+**GitHub `main`:** push verified after commit (see §8)
 
 ---
 
-## 1. Inner-page improvements (this release)
+## 8. Heroes, visibility, contact & branding (2026-10-14)
+
+### Root causes
+
+| Issue | Cause | Fix |
+|-------|--------|-----|
+| Section above **Flagship Layout** missing on RE home | `FeaturedProjectsSection` returned `null` when `/public/projects` was empty | Always render `ProjectsBlock` (empty-state copy when no API projects). **JK Nagar — Phases** unchanged. |
+| `.reveal` content invisible on some sections | `ScrollReveal` existed but was **not mounted** in page shells; `.reveal` defaults to `opacity: 0` | Wrap main content in `ScrollReveal` on RE + JW shells; RE `prefers-reduced-motion` fallback in `globals.css`. |
+| Wrong / excess Jamavisa branding | Footers, privacy, legacy `SiteFooter`, old email | Business email `tmlcheyyar@gmail.com`; phone kept `+91 99435 41435` from config; sole Jamavisa line = footer developer credit → [jamavisa.in](https://jamavisa.in). |
+| Heavy dark heroes | Strong dark overlays | Light theme gradients, darker text, clearer CTAs on RE + JW heroes. |
+
+### Affected files
+
+- RE: `RealEstateHero.tsx`, `RealEstateHomeSections.tsx`, `RealEstatePageShell.tsx`, `RealEstateFooter.tsx`, `real-estate-business.ts`, `page.tsx` (`id="properties"`), `ContactLeadForm.tsx`, `globals.css`, privacy, legacy `SiteFooter.tsx`
+- JW: `JewelleryHero.tsx`, `JewelleryPageShell.tsx`, `JewelleryFooter.tsx`, `jewellery-business.ts`, `ContactLeadForm.tsx`, privacy, legacy `SiteFooter.tsx`
+
+### Tests & build
+
+| Check | Result |
+|-------|--------|
+| `typecheck:re`, `typecheck:jew` | **PASS** |
+| `build:public` | **PASS** |
+| `test:api` | **NOT RUN** (no API changes) |
+
+### Browser verification (local dev)
+
+| Check | Result |
+|-------|--------|
+| RE `/` — “Our Projects” above “JK Nagar — Phases” | **PASS** |
+| RE `/` — hero readable, footer email/phone/credit | **PASS** |
+| JW `/` — light hero, footer email/phone/credit | **PASS** |
+| JW gold rates banner (local, no API) | “Rate unavailable” — expected without local API env |
+| Production jkbalaji.in / cheyyarbalaji.com | Verify after deploy (§8 deploy row) |
+
+---
+
+## 1. Inner-page improvements (prior release)
 
 ### Shared patterns
 
