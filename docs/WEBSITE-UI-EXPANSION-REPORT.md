@@ -1,7 +1,7 @@
 # Website UI expansion — final status (cleanup verification)
 
 **Last updated:** 2026-10-14  
-**GitHub `main`:** **`22f28bb`** (HTTPS push verified via `git ls-remote origin refs/heads/main`)  
+**GitHub `main`:** **`9fdd050`** (HTTPS; `git push origin main` + `git ls-remote` verified). Feature commit **`22f28bb`** (rules + scheme CTA).  
 **Latest deploy:** `.\deploy.ps1 -BuildTargets "jew" -SkipDbMigrate` — **PASS** (CTA label live on `/gold-schemes`)
 
 ---
