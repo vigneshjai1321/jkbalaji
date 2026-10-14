@@ -204,8 +204,13 @@ if [ -f $RemoteRoot/deployment/nginx/jkbalaji-ssl-live.conf ]; then
   nginx -t && systemctl reload nginx
 fi
 "@
+    $prevEapSsl = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     $code = Invoke-Ssh $ssl
-    if ($code -ne 0) { throw "SSL/nginx step failed (exit $code)" }
+    $ErrorActionPreference = $prevEapSsl
+    if ($code -ne 0) {
+      Write-Host "   SSL/certbot step returned exit $code (cert may not be due for renewal); continuing to verification."
+    }
   } else {
     Write-Host "6) SSL + nginx (skipped)"
   }

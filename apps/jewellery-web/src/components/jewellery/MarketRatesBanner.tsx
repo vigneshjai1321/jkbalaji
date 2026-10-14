@@ -27,7 +27,7 @@ export type MarketRatesResponse = {
 
 async function fetchMarketRates(): Promise<MarketRatesResponse | null> {
   const pub = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-  const base = pub ?? process.env.SERVER_API_URL ?? 'http://127.0.0.1:4000/api/v1';
+  const base = process.env.SERVER_API_URL?.replace(/\/$/, '') ?? pub ?? 'http://127.0.0.1:4000/api/v1';
   try {
     const res = await fetch(`${base}/public/jewellery/market-rates`, { next: { revalidate: 300 } });
     if (!res.ok) return null;
