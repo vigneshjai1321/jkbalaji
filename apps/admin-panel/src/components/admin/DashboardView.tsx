@@ -141,20 +141,29 @@ export function DashboardView({
     scope === 'real-estate' ? 'Real estate overview' : scope === 'jewellery' ? 'Gold & jewellery overview' : 'All businesses overview';
   const intro =
     scope === 'real-estate'
-      ? 'JK Balaji Real Estate — leads and developments recorded for jkbalaji.in.'
+      ? 'Plots, brokers, and commissions at a glance.'
       : scope === 'jewellery'
-        ? 'Sri Balaji Thangamaligai — enquiries recorded for cheyyarbalaji.com.'
-        : 'JK Balaji Real Estate and Sri Balaji Thangamaligai Jewellery — leads, follow-ups, and activity in one place.';
+        ? 'Shop rates, enquiries, and billing.'
+        : 'Real estate and jewellery — separate KPIs below.';
 
   return (
     <div className="space-y-6 max-w-[1400px]">
       {cards}
       <header>
         <h1 className="text-2xl md:text-[1.65rem] font-bold tracking-tight text-slate-900 dark:text-white">{title}</h1>
-        <p className={`text-sm md:text-[15px] mt-1 max-w-2xl ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{intro}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{intro}</p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="text-xs font-medium rounded-lg border px-2.5 py-1 border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/5"
+          >
+            Refresh
+          </button>
+        </div>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {scope !== 'jewellery' ? (
           <KpiCard theme={theme} accent="emerald" icon={Building2} label="Real estate leads" value={String(reLeads)} hint={`${reNew} new · ${data.properties} properties`} />
         ) : null}
@@ -169,10 +178,42 @@ export function DashboardView({
         ) : null}
         {scope === 'real-estate' ? (
           <>
-            <KpiCard theme={theme} accent="blue" icon={Inbox} label="Active projects" value={String(bu?.realEstate.activeProjects ?? data.projects)} hint="Planning, active, and on hold" />
-            <KpiCard theme={theme} accent="emerald" icon={Building2} label="Available properties" value={String(bu?.realEstate.available ?? 0)} hint={`${bu?.realEstate.reserved ?? 0} reserved · ${bu?.realEstate.sold ?? 0} sold`} />
-            <KpiCard theme={theme} accent="blue" icon={MapPin} label="Recorded land area" value={`${(bu?.realEstate.recordedLandSqft ?? 0).toLocaleString('en-IN')} sq ft`} hint={bu?.realEstate.propertiesMissingLandArea ? `${bu.realEstate.propertiesMissingLandArea} properties have no land area and are excluded` : 'Only properties with a saved land area'} />
-            <KpiCard theme={theme} accent="amber" icon={Phone} label="Commission outstanding" value={`₹${(bu?.realEstate.commissionOutstanding ?? 0).toLocaleString('en-IN')}`} hint={`Expected ₹${(bu?.realEstate.commissionExpected ?? 0).toLocaleString('en-IN')} · paid ₹${(bu?.realEstate.commissionPaid ?? 0).toLocaleString('en-IN')}. Expected is not revenue.`} />
+            <Link href="/projects" className="block h-full">
+              <KpiCard theme={theme} accent="blue" icon={Inbox} label="Projects" value={String(bu?.realEstate.activeProjects ?? data.projects)} hint="Active pipeline" />
+            </Link>
+            <Link href="/plots" className="block h-full">
+              <KpiCard theme={theme} accent="emerald" icon={MapPin} label="Plots" value={String(bu?.realEstate.plotTotal ?? 0)} hint={`${bu?.realEstate.plotAvailable ?? 0} available · ${bu?.realEstate.plotReserved ?? 0} reserved · ${bu?.realEstate.plotSold ?? 0} sold`} />
+            </Link>
+            <Link href="/brokers" className="block h-full">
+              <KpiCard theme={theme} accent="blue" icon={Building2} label="Brokers" value={String(bu?.realEstate.activeBrokers ?? 0)} hint="Active" />
+            </Link>
+            <Link href="/leads?site=REAL_ESTATE" className="block h-full">
+              <KpiCard theme={theme} accent="emerald" icon={Phone} label="New enquiries" value={String(reNew)} hint={`${reLeads} total`} />
+            </Link>
+            <Link href="/commissions" className="block h-full sm:col-span-2 xl:col-span-2">
+              <KpiCard theme={theme} accent="amber" icon={Phone} label="Commission outstanding" value={`₹${(bu?.realEstate.commissionOutstanding ?? 0).toLocaleString('en-IN')}`} hint={`Liability ₹${(bu?.realEstate.commissionExpected ?? 0).toLocaleString('en-IN')} · paid ₹${(bu?.realEstate.commissionPaid ?? 0).toLocaleString('en-IN')}`} />
+            </Link>
+          </>
+        ) : null}
+        {scope === 'jewellery' ? (
+          <>
+            <KpiCard theme={theme} accent="amber" icon={Gem} label="22K / g" value={data.goldRate ? `₹${data.goldRate.rate22k.toLocaleString('en-IN')}` : '—'} hint={data.goldRate ? `Updated ${new Date(data.goldRate.effectiveDate).toLocaleDateString('en-IN')}` : 'Waiting for KJPL'} />
+            <KpiCard theme={theme} accent="amber" icon={Gem} label="24K / g" value={data.goldRate ? `₹${data.goldRate.rate24k.toLocaleString('en-IN')}` : '—'} hint="From 22K × 24/22" />
+            <KpiCard
+              theme={theme}
+              accent="amber"
+              icon={Gem}
+              label="1 Sovereign · 22K · 8 g"
+              value={
+                data.goldRate
+                  ? `₹${(Math.round(data.goldRate.rate22k * 8 * 100) / 100).toLocaleString('en-IN')}`
+                  : '—'
+              }
+              hint="22K × 8 g"
+            />
+            <Link href="/gold-rates" className="block h-full">
+              <KpiCard theme={theme} accent="blue" icon={Inbox} label="Products" value={String(data.products)} hint={`${jewLeads} enquiries`} />
+            </Link>
           </>
         ) : null}
       </section>

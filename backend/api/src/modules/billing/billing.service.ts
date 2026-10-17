@@ -42,6 +42,8 @@ export type CreateInvoiceInput = {
   lines: LineInput[];
   gstApplied?: boolean;
   issue?: boolean;
+  /** When issuing, record a payment for the full total using existing payment rules. Ignored for drafts. */
+  settleAsPaid?: boolean;
   createdById?: string;
   /** Draft / issue number (SBT-INV-YYYY-0001). Issued invoices keep their number. */
   invoiceNo?: string;
@@ -290,6 +292,9 @@ export class BillingService {
         },
         include: { lines: true, customer: true, payments: true, events: true },
       });
+      if (issue && input.settleAsPaid) {
+        return this.settleInvoiceInFull(tx, inv.id, Number(inv.totalInr), input.createdById);
+      }
       return inv;
     });
   }
@@ -380,11 +385,14 @@ export class BillingService {
         },
         include: { lines: true, customer: true, payments: true, events: true },
       });
+      if (input.settleAsPaid && existing.status === InvoiceStatus.UNPAID && Number(existing.amountPaidInr) <= 0) {
+        return this.settleInvoiceInFull(tx, inv.id, Number(inv.totalInr), input.userId);
+      }
       return inv;
     });
   }
 
-  async issueInvoice(id: string, userId?: string) {
+  async issueInvoice(id: string, userId?: string, settleAsPaid?: boolean) {
     const inv = await this.prisma.invoice.findUnique({ where: { id } });
     if (!inv) throw new NotFoundException('Invoice not found');
     if (inv.status !== InvoiceStatus.DRAFT) throw new BadRequestException('Only drafts can be issued');
@@ -399,7 +407,7 @@ export class BillingService {
             preferred: inv.invoiceNo,
             excludeInvoiceId: id,
           });
-      return tx.invoice.update({
+      const issued = await tx.invoice.update({
         where: { id },
         data: {
           invoiceNo,
@@ -409,6 +417,49 @@ export class BillingService {
         },
         include: { lines: true, customer: true, payments: true, events: true },
       });
+      if (settleAsPaid && Number(issued.amountPaidInr) <= 0) {
+        return this.settleInvoiceInFull(tx, issued.id, Number(issued.totalInr), userId);
+      }
+      return issued;
+    });
+  }
+
+  /** Records one payment for the outstanding total. Status follows paymentStatus — never set PAID without this payment. */
+  private async settleInvoiceInFull(
+    tx: Prisma.TransactionClient,
+    invoiceId: string,
+    totalInr: number,
+    userId?: string,
+  ) {
+    const current = await tx.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    if (current.status === InvoiceStatus.CANCELLED || current.status === InvoiceStatus.DRAFT) {
+      throw new BadRequestException('Cannot settle a draft or cancelled invoice');
+    }
+    const already = Number(current.amountPaidInr);
+    const due = Math.round((totalInr - already) * 100) / 100;
+    if (due <= 0) return tx.invoice.findUniqueOrThrow({
+      where: { id: invoiceId },
+      include: { lines: true, customer: true, payments: true, events: true },
+    });
+    await tx.invoicePayment.create({
+      data: {
+        invoiceId,
+        amountInr: due,
+        method: 'Recorded with invoice',
+        recordedById: userId,
+      },
+    });
+    const paid = already + due;
+    return tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        amountPaidInr: paid,
+        status: paymentStatus(totalInr, paid) as InvoiceStatus,
+        events: {
+          create: { action: 'PAYMENT', detail: `₹${due} recorded with invoice`, userId },
+        },
+      },
+      include: { lines: true, customer: true, payments: true, events: true },
     });
   }
 
@@ -475,6 +526,7 @@ export class BillingService {
   async listInvoices(query: {
     search?: string;
     status?: InvoiceStatus;
+    payment?: 'paid' | 'unpaid';
     customerId?: string;
     from?: string;
     to?: string;
@@ -485,7 +537,10 @@ export class BillingService {
     const page = Math.max(1, query.page ?? 1);
     const limit = Math.min(100, Math.max(10, query.limit ?? 25));
     const where: Prisma.InvoiceWhereInput = {};
-    if (query.status) where.status = query.status;
+    if (query.payment === 'paid') where.status = InvoiceStatus.PAID;
+    else if (query.payment === 'unpaid') {
+      where.status = { in: [InvoiceStatus.UNPAID, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.DRAFT] };
+    } else if (query.status) where.status = query.status;
     if (query.customerId) where.customerId = query.customerId;
     if (query.gstApplied === true) where.gstApplied = true;
     if (query.gstApplied === false) where.gstApplied = false;

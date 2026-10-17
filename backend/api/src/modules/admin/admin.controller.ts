@@ -1,4 +1,19 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request } from 'express';
+import { BusinessUnitGuard } from '../auth/business-unit.guard.js';
+import { JewelleryUnit, RealEstateUnit } from '../auth/business-unit.decorator.js';
 import { Prisma, SiteKey, UserRole } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -11,8 +26,10 @@ import { parseProjectWrite, ProjectValidationError, type ProjectWriteInput } fro
 
 const PROJECT_EDITORS = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.REAL_ESTATE_MANAGER] as const;
 
+type AuthedRequest = Request & { user?: { role: UserRole } };
+
 @Controller({ path: 'admin', version: '1' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, BusinessUnitGuard)
 export class AdminController {
   constructor(
     private readonly prisma: PrismaService,
@@ -35,6 +52,7 @@ export class AdminController {
   }
 
   @Get('projects')
+  @RealEstateUnit()
   async projects() {
     await this.projectsCatalog.ensureCanonicalProjects();
     return this.prisma.project.findMany({
@@ -63,6 +81,7 @@ export class AdminController {
   }
 
   @Get('projects/:id')
+  @RealEstateUnit()
   async project(@Param('id') id: string) {
     const row = await this.prisma.project.findUnique({
       where: { id },
@@ -116,31 +135,70 @@ export class AdminController {
   }
 
   @Get('products')
+  @JewelleryUnit()
   products() {
     return this.prisma.jewelleryProduct.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
   @Get('leads')
-  leads() {
-    return this.prisma.lead.findMany({
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        site: true,
-        leadType: true,
-        name: true,
-        phone: true,
-        email: true,
-        message: true,
-        sourcePage: true,
-        status: true,
-        createdAt: true,
-        property: { select: { id: true, title: true, slug: true } },
-        project: { select: { id: true, name: true, slug: true } },
-        assignedTo: { select: { id: true, name: true } },
-        _count: { select: { notes: true, followups: true } },
-      },
-    });
+  async leads(
+    @Req() req: AuthedRequest,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('q') q?: string,
+    @Query('site') site?: string,
+    @Query('status') status?: string,
+    @Query('sort') sort?: string,
+  ) {
+    const select = {
+      id: true,
+      site: true,
+      leadType: true,
+      name: true,
+      phone: true,
+      email: true,
+      message: true,
+      sourcePage: true,
+      status: true,
+      createdAt: true,
+      property: { select: { id: true, title: true, slug: true } },
+      project: { select: { id: true, name: true, slug: true } },
+      assignedTo: { select: { id: true, name: true } },
+      _count: { select: { notes: true, followups: true } },
+    } as const;
+
+    if (!page) {
+      return this.prisma.lead.findMany({ orderBy: { createdAt: 'desc' }, select });
+    }
+
+    const p = Math.max(1, Number(page) || 1);
+    const size = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
+    const where: Prisma.LeadWhereInput = {};
+    const role = req.user?.role;
+    if (role === UserRole.GOLD_MANAGER) where.site = SiteKey.JEWELLERY;
+    else if (role === UserRole.REAL_ESTATE_MANAGER || role === UserRole.SALES_MANAGER) where.site = SiteKey.REAL_ESTATE;
+    if (site === 'REAL_ESTATE' || site === 'JEWELLERY') where.site = site;
+    if (status) where.status = status as never;
+    const term = q?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+    const orderBy =
+      sort === 'name:asc'
+        ? { name: 'asc' as const }
+        : sort === 'name:desc'
+          ? { name: 'desc' as const }
+          : { createdAt: 'desc' as const };
+
+    const [total, data] = await Promise.all([
+      this.prisma.lead.count({ where }),
+      this.prisma.lead.findMany({ where, skip: (p - 1) * size, take: size, orderBy, select }),
+    ]);
+    return { data, page: p, pageSize: size, total, totalPages: Math.max(1, Math.ceil(total / size)) };
   }
 
   @Patch('leads/:id')

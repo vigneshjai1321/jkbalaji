@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeLines, paymentStatus, resolveTaxMode } from './invoice-calculations.js';
+import { computeLines, invoicePaymentLabel, paymentStatus, resolveTaxMode } from './invoice-calculations.js';
 
 describe('resolveTaxMode', () => {
   it('uses IGST for inter-state', () => {
@@ -36,5 +36,15 @@ describe('paymentStatus', () => {
   it('detects partial payment', () => {
     expect(paymentStatus(1000, 400)).toBe('PARTIALLY_PAID');
     expect(paymentStatus(1000, 1000)).toBe('PAID');
+  });
+});
+
+describe('invoicePaymentLabel', () => {
+  it('shows Paid only when recorded payments cover the total', () => {
+    expect(invoicePaymentLabel('PAID', 1000, 1000)).toBe('Paid');
+    expect(invoicePaymentLabel('UNPAID', 1000, 0)).toBe('Unpaid');
+    expect(invoicePaymentLabel('PARTIALLY_PAID', 1000, 400)).toBe('Unpaid');
+    expect(invoicePaymentLabel('CANCELLED', 1000, 1000)).toBe('Cancelled');
+    expect(invoicePaymentLabel('PAID', 1000, 0)).toBe('Unpaid');
   });
 });

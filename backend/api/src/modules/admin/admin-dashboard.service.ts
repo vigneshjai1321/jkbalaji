@@ -276,11 +276,15 @@ export class AdminDashboardService {
     const available = properties.filter((p) => p.status === 'AVAILABLE');
     const reserved = properties.filter((p) => p.status === 'BOOKED');
     const sold = properties.filter((p) => p.status === 'SOLD');
-    const [activeProjects, completedProjects, archivedProjects, commissions] = await Promise.all([
+    const [activeProjects, completedProjects, archivedProjects, activeBrokers, commissions] = await Promise.all([
       this.safe(() => this.prisma.project.count({ where: { lifecycle: { in: ['PLANNING', 'ACTIVE', 'ON_HOLD'] } } }), 0),
       this.safe(() => this.prisma.project.count({ where: { lifecycle: 'COMPLETED' } }), 0),
       this.safe(() => this.prisma.project.count({ where: { lifecycle: 'ARCHIVED' } }), 0),
-      this.safe(() => this.prisma.commission.findMany({ select: { expectedInr: true, paidInr: true } }), []),
+      this.safe(() => this.prisma.broker.count({ where: { isActive: true } }), 0),
+      this.safe(
+        () => this.prisma.commission.findMany({ where: { voided: false }, select: { expectedInr: true, paidInr: true } }),
+        [],
+      ),
     ]);
     const expected = commissions.reduce((sum, row) => sum + Number(row.expectedInr), 0);
     const paid = commissions.reduce((sum, row) => sum + Number(row.paidInr), 0);
@@ -316,6 +320,7 @@ export class AdminDashboardService {
       commissionExpected: Math.round(expected * 100) / 100,
       commissionPaid: Math.round(paid * 100) / 100,
       commissionOutstanding: Math.round(Math.max(0, expected - paid) * 100) / 100,
+      activeBrokers,
     };
   }
 

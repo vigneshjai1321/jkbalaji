@@ -35,7 +35,7 @@ export function AdminBreadcrumbs() {
   const pathname = usePathname();
   const dark = useAdminTheme() === 'dark';
   const parts = pathname.split('/').filter(Boolean);
-  if (parts.length === 0) return null;
+  if (parts.length === 0 || parts[0] === 'billing') return null;
 
   const crumbs: { href: string; label: string }[] = [{ href: '/', label: 'Home' }];
   let acc = '';

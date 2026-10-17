@@ -8,7 +8,8 @@ import { adminFetch } from '@/lib/admin-api';
 import { AdminDataTable, type AdminDataTableColumn } from '@/components/admin/AdminDataTable';
 import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
 import { AdminBtnPrimary, AdminBtnSecondary } from '@/components/admin/AdminForm';
-import { InvoicePdfLink } from '@/components/admin/InvoicePdfLink';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { InvoiceDeleteDialog, InvoiceEditDrawer, InvoiceViewModal } from '@/components/billing/InvoiceManageDialogs';
 import {
   billingPageChromeClass,
   useBillingDateClass,
@@ -20,14 +21,17 @@ import {
   useBillingStatCardClass,
 } from '@/components/billing/billing-theme';
 import { useAdminTheme } from '@/components/admin/AdminShell';
-import type { BillingSummary, InvoiceListItem, InvoiceStatus } from '@/lib/billing-types';
-import { BILLING_SUPPORT_EMAIL, INVOICE_STATUSES } from '@/lib/billing-types';
+import type { BillingSummary, InvoiceListItem } from '@/lib/billing-types';
+import { BILLING_SUPPORT_EMAIL } from '@/lib/billing-types';
 
 type ListResp = { items: InvoiceListItem[]; total: number; page: number; limit: number };
 
 export default function AdminBillingPage() {
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<InvoiceStatus | ''>('');
+  const [payment, setPayment] = useState<'' | 'paid' | 'unpaid'>('');
+  const [viewId, setViewId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<InvoiceListItem | null>(null);
   const [customerId, setCustomerId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -43,8 +47,6 @@ export default function AdminBillingPage() {
   const linkClass = useBillingLinkClass();
   const muted = useBillingMutedTextClass();
   const dark = useAdminTheme() === 'dark';
-  const tableActionMuted = dark ? 'text-slate-300' : 'text-stone-600';
-  const tableActionPrint = dark ? 'text-slate-400' : 'text-stone-500';
 
   const customers = useQuery({
     queryKey: ['billing-customers-list'],
@@ -54,7 +56,7 @@ export default function AdminBillingPage() {
   const params = useMemo(() => {
     const q = new URLSearchParams();
     if (search.trim()) q.set('search', search.trim());
-    if (status) q.set('status', status);
+    if (payment) q.set('payment', payment);
     if (customerId) q.set('customerId', customerId);
     if (from) q.set('from', from);
     if (to) q.set('to', to);
@@ -63,7 +65,7 @@ export default function AdminBillingPage() {
     q.set('page', String(page));
     q.set('limit', String(limit));
     return q.toString();
-  }, [search, status, customerId, from, to, gstFilter, page, limit]);
+  }, [search, payment, customerId, from, to, gstFilter, page, limit]);
 
   const summary = useQuery({
     queryKey: ['billing-summary'],
@@ -78,36 +80,56 @@ export default function AdminBillingPage() {
   const loading = invoices.isLoading;
   const invoiceTotal = invoices.data?.total ?? 0;
   const invoiceColumns: AdminDataTableColumn<InvoiceListItem>[] = [
-    { id: 'invoiceNo', header: 'Invoice #', defaultWidth: 140, cell: (inv) => <span className="font-mono text-xs">{inv.invoiceNo}</span> },
-    { id: 'customer', header: 'Customer', defaultWidth: 180, cell: (inv) => <span title={inv.customer.name}>{inv.customer.name}</span> },
-    { id: 'date', header: 'Date', defaultWidth: 120, cell: (inv) => new Date(inv.invoiceDate).toLocaleDateString('en-IN') },
-    { id: 'gst', header: 'GST', defaultWidth: 72, cell: (inv) => (inv.gstApplied === false ? 'No' : 'Yes') },
-    { id: 'status', header: 'Status', defaultWidth: 120, cell: (inv) => inv.status.replace(/_/g, ' ') },
-    { id: 'total', header: 'Total', defaultWidth: 130, cell: (inv) => `₹${Number(inv.totalInr).toLocaleString('en-IN')}` },
-    { id: 'paid', header: 'Paid', defaultWidth: 130, cell: (inv) => `₹${Number(inv.amountPaidInr).toLocaleString('en-IN')}` },
     {
       id: 'actions',
       header: 'Actions',
       truncate: false,
-      defaultWidth: 220,
-      cell: (inv) => (
-        <span className="flex flex-wrap gap-2">
-          <Link href={`/billing/invoices/${inv.id}`} className={clsx(linkClass, 'text-xs')}>
-            View
-          </Link>
-          {(inv.status === 'DRAFT' || inv.status === 'UNPAID') && Number(inv.amountPaidInr) === 0 ? (
-            <Link href={`/billing/invoices/${inv.id}?edit=1`} className={clsx(tableActionMuted, 'text-xs hover:underline')}>
-              Edit
-            </Link>
-          ) : null}
-          {inv.status !== 'CANCELLED' && inv.status !== 'DRAFT' ? <InvoicePdfLink id={inv.id} /> : null}
-          {inv.status !== 'DRAFT' ? (
-            <Link href={`/billing/invoices/${inv.id}/preview`} className={clsx(tableActionPrint, 'text-xs hover:underline')}>
-              Print
-            </Link>
-          ) : null}
-        </span>
-      ),
+      defaultWidth: 112,
+      minWidth: 104,
+      cell: (inv) => {
+        const paid = Number(inv.amountPaidInr);
+        const canEdit = (inv.status === 'DRAFT' || inv.status === 'UNPAID') && paid === 0;
+        return (
+          <span className="inline-flex items-center gap-0.5">
+            <button type="button" className="rounded p-1 hover:bg-slate-100" title="View invoice" aria-label={`View ${inv.invoiceNo}`} onClick={() => setViewId(inv.id)}>
+              <Eye className="h-4 w-4 text-emerald-700" />
+            </button>
+            <button
+              type="button"
+              className="rounded p-1 hover:bg-slate-100 disabled:opacity-30"
+              title={canEdit ? 'Edit invoice' : 'Edit is available for drafts and unpaid invoices without payments'}
+              aria-label={`Edit ${inv.invoiceNo}`}
+              disabled={!canEdit}
+              onClick={() => setEditId(inv.id)}
+            >
+              <Pencil className="h-4 w-4 text-sky-700" />
+            </button>
+            <button type="button" className="rounded p-1 hover:bg-red-50" title="Delete invoice" aria-label={`Delete ${inv.invoiceNo}`} onClick={() => setDeleteTarget(inv)}>
+              <Trash2 className="h-4 w-4 text-red-700" />
+            </button>
+          </span>
+        );
+      },
+    },
+    { id: 'invoiceNo', header: 'Invoice #', defaultWidth: 140, cell: (inv) => <span className="font-mono text-xs">{inv.invoiceNo}</span> },
+    { id: 'customer', header: 'Customer', defaultWidth: 180, cell: (inv) => <span title={inv.customer.name}>{inv.customer.name}</span> },
+    { id: 'date', header: 'Date', defaultWidth: 120, cell: (inv) => new Date(inv.invoiceDate).toLocaleDateString('en-IN') },
+    {
+      id: 'amount',
+      header: 'Amount',
+      defaultWidth: 130,
+      cell: (inv) => `₹${Number(inv.totalInr).toLocaleString('en-IN')}`,
+    },
+    {
+      id: 'payment',
+      header: 'Payment',
+      defaultWidth: 110,
+      cell: (inv) => {
+        const paid = Number(inv.amountPaidInr);
+        const total = Number(inv.totalInr);
+        if (inv.status === 'CANCELLED') return 'Cancelled';
+        return paid > 0 && paid + 0.001 >= total ? 'Paid' : 'Unpaid';
+      },
     },
   ];
 
@@ -139,7 +161,7 @@ export default function AdminBillingPage() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat label="Total invoices" value={String(summary.data?.invoiceCount ?? '—')} className={statCard} muted={muted} />
         <Stat label="Total invoiced" value={`₹${(summary.data?.totalInvoiced ?? 0).toLocaleString('en-IN')}`} className={statCard} muted={muted} />
-        <Stat label="Outstanding" value={`₹${(summary.data?.outstanding ?? 0).toLocaleString('en-IN')}`} className={statCard} muted={muted} />
+        <Stat label="Balance due" value={`₹${(summary.data?.outstanding ?? 0).toLocaleString('en-IN')}`} className={statCard} muted={muted} />
         <Stat label="Amount received" value={`₹${(summary.data?.paymentsReceived ?? 0).toLocaleString('en-IN')}`} className={statCard} muted={muted} />
       </div>
 
@@ -153,9 +175,9 @@ export default function AdminBillingPage() {
               new Date(inv.invoiceDate).toLocaleDateString('en-IN'),
               inv.status.replace(/_/g, ' '),
               `₹${Number(inv.totalInr).toLocaleString('en-IN')}`,
-              <Link key={inv.id} href={`/billing/invoices/${inv.id}`} className={clsx(linkClass, 'text-xs')}>
+              <button key={inv.id} type="button" className={clsx(linkClass, 'text-xs')} onClick={() => setViewId(inv.id)}>
                 View
-              </Link>,
+              </button>,
             ])}
           />
         </AdminPanel>
@@ -176,21 +198,18 @@ export default function AdminBillingPage() {
             />
           </label>
           <label className="lg:col-span-2 flex flex-col gap-1 min-w-0">
-            <span className={clsx('text-xs font-medium', muted)}>Status</span>
+            <span className={clsx('text-xs font-medium', muted)}>Payment</span>
             <select
               className={select}
-              value={status}
+              value={payment}
               onChange={(e) => {
-                setStatus(e.target.value as InvoiceStatus | '');
+                setPayment(e.target.value as '' | 'paid' | 'unpaid');
                 setPage(1);
               }}
             >
-              <option value="">All statuses</option>
-              {INVOICE_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace(/_/g, ' ')}
-                </option>
-              ))}
+              <option value="">All</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
             </select>
           </label>
           <label className="lg:col-span-2 flex flex-col gap-1 min-w-0">
@@ -274,6 +293,17 @@ export default function AdminBillingPage() {
           }}
         />
       </AdminPanel>
+      {viewId ? <InvoiceViewModal id={viewId} onClose={() => setViewId(null)} /> : null}
+      {editId ? <InvoiceEditDrawer id={editId} onClose={() => setEditId(null)} /> : null}
+      {deleteTarget ? (
+        <InvoiceDeleteDialog
+          id={deleteTarget.id}
+          invoiceNo={deleteTarget.invoiceNo}
+          status={deleteTarget.status}
+          hasPayments={Number(deleteTarget.amountPaidInr) > 0}
+          onClose={() => setDeleteTarget(null)}
+        />
+      ) : null}
     </div>
   );
 }

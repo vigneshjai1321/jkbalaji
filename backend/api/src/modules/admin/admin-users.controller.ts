@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import * as argon2 from 'argon2';
 import { UserRole } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -32,6 +33,7 @@ export class AdminUsersController {
 
   @Post()
   async create(
+    @Req() req: Request & { user?: { role: UserRole } },
     @Body()
     body: {
       email: string;
@@ -42,6 +44,9 @@ export class AdminUsersController {
       phone?: string;
     },
   ) {
+    if (body.role === UserRole.SUPER_ADMIN && req.user?.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only a super administrator can assign the super admin role');
+    }
     const passwordHash = await argon2.hash(body.password);
     return this.prisma.user.create({
       data: {

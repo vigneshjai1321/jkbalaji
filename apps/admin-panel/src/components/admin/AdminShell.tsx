@@ -7,6 +7,7 @@ import { createContext, useContext, useEffect, useRef, useState, type RefObject 
 import { clsx } from 'clsx';
 import { NAV_GROUPS, navItemIsActive } from './admin-nav';
 import { filterNavGroupsForRole } from '@/lib/admin-nav-access';
+import { businessScopeForRole } from '@/lib/role-scope';
 import { BusinessPathSync, useBusiness } from './BusinessContext';
 import { AdminTopBar } from './AdminTopBar';
 import { AdminBreadcrumbs } from './AdminBreadcrumbs';
@@ -46,16 +47,23 @@ export function AdminShell({
   const mainRef = useRef<HTMLElement>(null);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const dark = theme === 'dark';
-  const { business } = useBusiness();
+  const { business, setBusiness } = useBusiness();
+  const roleScope = businessScopeForRole(user.role);
+  useEffect(() => {
+    if (roleScope === 'real-estate') setBusiness('real-estate');
+    if (roleScope === 'jewellery') setBusiness('jewellery');
+  }, [roleScope, setBusiness]);
+  const effectiveBusiness = roleScope === 'all' ? business : roleScope;
   const visibleGroups = filterNavGroupsForRole(
     NAV_GROUPS.filter((group) => {
-      if (business === 'real-estate') return group.title !== 'Jewellery';
-      if (business === 'jewellery') return group.title !== 'Real Estate';
+      if (effectiveBusiness === 'real-estate') return group.title !== 'Jewellery';
+      if (effectiveBusiness === 'jewellery') return group.title !== 'Real Estate';
       return true;
     }),
     user.role,
   );
-  const businessLabel = business === 'real-estate' ? 'Real Estate' : business === 'jewellery' ? 'Gold & Jewellery' : 'All businesses';
+  const businessLabel =
+    effectiveBusiness === 'real-estate' ? 'Real Estate' : effectiveBusiness === 'jewellery' ? 'Gold & Jewellery' : 'All businesses';
 
   useEffect(() => {
     const stored = localStorage.getItem('jk_admin_sidebar_collapsed');

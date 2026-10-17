@@ -22,7 +22,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "ensure:business-admins": "tsx scripts/ensure-business-admins.ts"
   },
   "dependencies": {
     "@jkbalaji/types": "0.1.0",

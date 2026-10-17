@@ -12,30 +12,42 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { RealEstateUnit } from '../auth/business-unit.decorator.js';
+import { BusinessUnitGuard } from '../auth/business-unit.guard.js';
+import { CommissionRateSource } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { ActivityLogService } from '../../common/activity-log.service.js';
 import { computeQuotationTotals, type PlotChargeInput } from './plot-calculations.js';
 import { commissionExpected, commissionStatus } from './measure.js';
+import { CommissionRateService } from './commission-rate.service.js';
+import { COMMISSION_WRITE_ROLES, PLOT_SALES_ROLES } from './commission-roles.js';
 import { JK_NAGAR_PHASE_1_SLUG } from './jk-nagar-phase-1-plots.js';
 import { jkNagarPhase1ImportRows, planPlotImport, type PlotImportResult } from './plot-import.js';
 import { syncPlotBasePrice } from './plot-validation.js';
+import { groupPlotImportReviews } from './plot-import-review.js';
 
 type ChargeBody = PlotChargeInput;
 
 @Controller({ path: 'admin/erp', version: '1' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BusinessUnitGuard)
+@RealEstateUnit()
 export class AdminPlotSalesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: ActivityLogService,
+    private readonly commissionRates: CommissionRateService,
   ) {}
 
   @Get('plots/import/reviews')
-  importReviews(@Query('projectId') projectId?: string) {
-    return this.prisma.plotImportReview.findMany({
+  async importReviews(@Query('projectId') projectId?: string) {
+    const rows = await this.prisma.plotImportReview.findMany({
       where: { projectId: projectId || undefined, resolvedAt: null },
       orderBy: { createdAt: 'desc' },
     });
+    const groups = groupPlotImportReviews(rows);
+    return { groups, conflictCount: groups.length, rawCount: rows.length };
   }
 
   @Post('plots/import/jk-nagar-phase-1')
@@ -86,6 +98,15 @@ export class AdminPlotSalesController {
 
     await this.prisma.$transaction(async (tx) => {
       for (const c of plan.conflicts) {
+        const dup = await tx.plotImportReview.findFirst({
+          where: {
+            projectId,
+            suppliedPlotNumber: c.plotNumber,
+            resolvedAt: null,
+            areaSqft: c.importAreaSqft,
+          },
+        });
+        if (dup) continue;
         await tx.plotImportReview.create({
           data: {
             projectId,
@@ -195,13 +216,16 @@ export class AdminPlotSalesController {
   }
 
   @Post('plot-quotations/preview')
+  @Roles(...PLOT_SALES_ROLES)
   previewQuotation(
     @Body()
     body: {
       plotId?: string;
+      projectId?: string;
       areaSqft?: number;
       pricePerSqftInr?: number;
       charges?: ChargeBody[];
+      brokerId?: string;
       broker?: {
         kind?: 'PERCENTAGE' | 'FIXED';
         rate?: number;
@@ -215,9 +239,11 @@ export class AdminPlotSalesController {
 
   private async buildQuotationTotals(body: {
     plotId?: string;
+    projectId?: string;
     areaSqft?: number;
     pricePerSqftInr?: number;
     charges?: ChargeBody[];
+    brokerId?: string;
     broker?: {
       kind?: 'PERCENTAGE' | 'FIXED';
       rate?: number;
@@ -236,21 +262,36 @@ export class AdminPlotSalesController {
     if (!Number.isFinite(rate) || rate < 0) throw new BadRequestException('Price per sq ft is required');
 
     const baseOnly = computeQuotationTotals({ areaSqft: area, pricePerSqftInr: rate, charges: [] });
+    let projectId = body.projectId;
+    if (!projectId && body.plotId) {
+      const plotRow = await this.prisma.plot.findUnique({ where: { id: body.plotId }, select: { projectId: true } });
+      projectId = plotRow?.projectId ?? undefined;
+    }
+    let brokerKind = body.broker?.kind;
+    let brokerRate = body.broker?.rate != null ? Number(body.broker.rate) : undefined;
+    if (body.brokerId && (!brokerKind || brokerRate == null)) {
+      const resolved = await this.commissionRates.resolveEffectiveRate({
+        brokerId: body.brokerId,
+        projectId: projectId ?? null,
+      });
+      brokerKind = resolved.kind;
+      brokerRate = resolved.rate;
+    }
     const totals = computeQuotationTotals({
       areaSqft: area,
       pricePerSqftInr: rate,
       charges: body.charges ?? [],
-      broker: body.broker?.kind
+      broker: brokerKind
         ? {
-            kind: body.broker.kind,
-            rate: Number(body.broker.rate ?? 0),
+            kind: brokerKind,
+            rate: Number(brokerRate ?? 0),
             basePlotPriceInr: baseOnly.basePlotPriceInr,
-            paidBy: body.broker.paidBy === 'BUYER' ? 'BUYER' : 'SELLER',
-            includeInTotal: Boolean(body.broker.includeInTotal),
+            paidBy: body.broker?.paidBy === 'BUYER' ? 'BUYER' : 'SELLER',
+            includeInTotal: Boolean(body.broker?.includeInTotal),
           }
         : null,
     });
-    return totals;
+    return { ...totals, resolvedBrokerRate: brokerKind ? { kind: brokerKind, rate: brokerRate } : null };
   }
 
   @Get('plot-quotations')
@@ -283,6 +324,7 @@ export class AdminPlotSalesController {
   }
 
   @Post('plot-quotations')
+  @Roles(...PLOT_SALES_ROLES)
   async createQuotation(
     @Body()
     body: {
@@ -310,10 +352,15 @@ export class AdminPlotSalesController {
 
     const totals = await this.buildQuotationTotals({
       plotId: body.plotId,
+      projectId,
       pricePerSqftInr: body.pricePerSqftInr,
       charges: body.charges,
+      brokerId: body.brokerId,
       broker: body.brokerId ? body.broker : undefined,
     });
+    const resolved = totals.resolvedBrokerRate;
+    const commissionKind = body.broker?.kind ?? resolved?.kind;
+    const commissionRate = body.broker?.rate != null ? Number(body.broker.rate) : resolved?.rate;
 
     const status = body.status === 'QUOTED' ? 'QUOTED' : 'DRAFT';
 
@@ -330,8 +377,8 @@ export class AdminPlotSalesController {
           estimatedTotalInr: totals.estimatedTotalInr,
           includeCommissionInTotal: Boolean(body.broker?.includeInTotal),
           brokerId: body.brokerId || null,
-          commissionKind: body.broker?.kind ?? null,
-          commissionRate: body.broker?.rate != null ? Number(body.broker.rate) : null,
+          commissionKind: commissionKind ?? null,
+          commissionRate: commissionRate != null ? Number(commissionRate) : null,
           commissionExpectedInr: totals.commissionExpectedInr,
           commissionPaidBy: body.broker?.paidBy === 'BUYER' ? 'BUYER' : 'SELLER',
           validUntil: body.validUntil ? new Date(body.validUntil) : null,
@@ -360,15 +407,29 @@ export class AdminPlotSalesController {
         },
       });
 
-      if (body.brokerId && body.broker?.kind && totals.commissionExpectedInr != null) {
+      if (body.brokerId && commissionKind && totals.commissionExpectedInr != null) {
+        const existing = await tx.commission.findFirst({
+          where: { plotId: body.plotId!, voided: false, plotQuotation: { status: { not: 'VOID' } } },
+        });
+        if (existing) {
+          throw new BadRequestException(
+            'This plot already has an active commission. Void the previous quotation or mark its commission for review.',
+          );
+        }
+        const rateMeta = await this.commissionRates.resolveEffectiveRate({
+          brokerId: body.brokerId,
+          projectId,
+        });
         await tx.commission.create({
           data: {
             brokerId: body.brokerId,
             plotId: body.plotId!,
             projectId,
             plotQuotationId: q.id,
-            kind: body.broker.kind,
-            rate: Number(body.broker.rate ?? 0),
+            kind: commissionKind,
+            rate: Number(commissionRate ?? 0),
+            rateSource: rateMeta.source,
+            calculationBasis: 'BASE_PLOT',
             saleValueInr: totals.basePlotPriceInr,
             expectedInr: totals.commissionExpectedInr,
             paidInr: 0,
@@ -386,7 +447,33 @@ export class AdminPlotSalesController {
     });
   }
 
+  @Post('plot-quotations/:id/void')
+  @Roles(...PLOT_SALES_ROLES)
+  async voidQuotation(@Param('id') id: string) {
+    const q = await this.prisma.plotQuotation.findUnique({ where: { id }, include: { commission: true } });
+    if (!q) throw new NotFoundException('Quotation not found');
+    return this.prisma.$transaction(async (tx) => {
+      await tx.plotQuotation.update({ where: { id }, data: { status: 'VOID' } });
+      if (q.commission) {
+        const paid = Number(q.commission.paidInr);
+        await tx.commission.update({
+          where: { id: q.commission.id },
+          data: {
+            voided: paid <= 0,
+            needsReview: paid > 0,
+            notes: q.commission.notes
+              ? `${q.commission.notes}\nQuotation voided — review required.`
+              : 'Quotation voided — review required.',
+          },
+        });
+      }
+      await this.audit.log({ action: 'UPDATE', entity: 'plot_quotation', entityId: id, summary: 'Quotation voided' });
+      return { ok: true };
+    });
+  }
+
   @Post('plot-quotations/:id/reserve')
+  @Roles(...PLOT_SALES_ROLES)
   async reserveFromQuotation(@Param('id') id: string) {
     const q = await this.prisma.plotQuotation.findUnique({ where: { id }, include: { plot: true } });
     if (!q) throw new NotFoundException('Quotation not found');
@@ -412,6 +499,7 @@ export class AdminPlotSalesController {
   }
 
   @Post('plot-quotations/:id/mark-sold')
+  @Roles(...PLOT_SALES_ROLES)
   async markSoldFromQuotation(@Param('id') id: string) {
     const q = await this.prisma.plotQuotation.findUnique({ where: { id }, include: { plot: true } });
     if (!q) throw new NotFoundException('Quotation not found');
@@ -429,6 +517,7 @@ export class AdminPlotSalesController {
   }
 
   @Patch('commissions/:id/plot-payment')
+  @Roles(...COMMISSION_WRITE_ROLES)
   async updatePlotCommissionPayment(@Param('id') id: string, @Body() body: { paidInr?: number }) {
     const current = await this.prisma.commission.findUniqueOrThrow({ where: { id } });
     const paid = body.paidInr === undefined ? Number(current.paidInr) : Number(body.paidInr);

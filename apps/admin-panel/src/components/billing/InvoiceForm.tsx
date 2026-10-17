@@ -74,6 +74,9 @@ export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0,
   const [gstApplied, setGstApplied] = useState(initial?.gstApplied ?? true);
   const [lines, setLines] = useState<InvoiceLine[]>(initial?.lines?.length ? initial.lines : [emptyLine(3)]);
   const [draftInvoiceNo, setDraftInvoiceNo] = useState(invoiceNo ?? '');
+  const [paymentChoice, setPaymentChoice] = useState<'PAID' | 'UNPAID'>(
+    mode === 'edit' && initialStatus === 'PAID' ? 'PAID' : mode === 'create' ? 'PAID' : 'UNPAID',
+  );
   const [totals, setTotals] = useState<Preview['totals'] | null>(null);
   const [totalsLoading, setTotalsLoading] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
@@ -166,11 +169,20 @@ export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0,
 
   const saveMut = useMutation({
     mutationFn: async (issue: boolean) => {
-      const body = { ...previewInput(), customerId, issue, invoiceNo: draftInvoiceNo.trim() || undefined };
+      const body = {
+        ...previewInput(),
+        customerId,
+        issue,
+        settleAsPaid: issue ? paymentChoice === 'PAID' : mode === 'edit' && initialStatus === 'UNPAID' ? paymentChoice === 'PAID' : false,
+        invoiceNo: draftInvoiceNo.trim() || undefined,
+      };
       if (mode === 'edit' && invoiceId) {
         await adminFetch(`/billing/invoices/${invoiceId}`, { method: 'PATCH', body: JSON.stringify(body) });
         if (issue && initialStatus === 'DRAFT') {
-          return adminFetch<{ id: string }>(`/billing/invoices/${invoiceId}/issue`, { method: 'POST' });
+          return adminFetch<{ id: string }>(`/billing/invoices/${invoiceId}/issue`, {
+            method: 'POST',
+            body: JSON.stringify({ settleAsPaid: paymentChoice === 'PAID' }),
+          });
         }
         return { id: invoiceId };
       }
@@ -304,7 +316,9 @@ export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0,
     const no = draftInvoiceNo.trim() || nextNoQuery.data || 'this invoice';
     if (
       !window.confirm(
-        `Issue invoice ${no}? This finalizes the bill and uses your configured numbering rules. You can still record payments later.`,
+        paymentChoice === 'PAID'
+          ? `Issue invoice ${no} as Paid? A payment for the full total will be recorded. The invoice is not marked paid without that payment.`
+          : `Issue invoice ${no} as Unpaid? No payment will be recorded.`,
       )
     ) {
       return;
@@ -346,6 +360,20 @@ export function InvoiceForm({ mode, invoiceId, invoiceNo, initialAmountPaid = 0,
             }}
           />
           {mode === 'create' ? <span className={hintClass}>Suggested next number — edit before save if needed.</span> : null}
+        </label>
+        <label className={labelClass}>
+          Payment status
+          <select
+            className={`${selectClass} mt-0.5`}
+            value={paymentChoice}
+            onChange={(e) => setPaymentChoice(e.target.value === 'UNPAID' ? 'UNPAID' : 'PAID')}
+          >
+            <option value="PAID">Paid</option>
+            <option value="UNPAID">Unpaid</option>
+          </select>
+          <span className={hintClass}>
+            Paid records a payment for the invoice total when you issue or update an unpaid invoice. A draft save does not mark it paid.
+          </span>
         </label>
         <label className={labelClass}>
           Invoice date

@@ -9,6 +9,7 @@ describe('area and commission math', () => {
   });
 
   it('keeps expected commission separate from money received', () => {
+    expect(commissionExpected('PERCENTAGE', 2, 1_800_000)).toBe(36_000);
     expect(commissionExpected('PERCENTAGE', 2, 500000)).toBe(10000);
     expect(commissionExpected('FIXED', 15000, null)).toBe(15000);
     expect(commissionStatus(10000, 0)).toBe('PENDING');

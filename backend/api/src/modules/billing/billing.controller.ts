@@ -122,6 +122,7 @@ export class BillingController {
   invoices(
     @Query('search') search?: string,
     @Query('status') status?: InvoiceStatus,
+    @Query('payment') payment?: 'paid' | 'unpaid',
     @Query('customerId') customerId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -134,6 +135,7 @@ export class BillingController {
     return this.billing.listInvoices({
       search,
       status,
+      payment,
       customerId,
       from,
       to,
@@ -164,8 +166,8 @@ export class BillingController {
   }
 
   @Post('invoices/:id/issue')
-  issue(@Param('id') id: string, @Req() req: AuthReq) {
-    return this.billing.issueInvoice(id, req.user?.sub);
+  issue(@Param('id') id: string, @Body() body: { settleAsPaid?: boolean }, @Req() req: AuthReq) {
+    return this.billing.issueInvoice(id, req.user?.sub, body?.settleAsPaid === true);
   }
 
   @Post('invoices/:id/cancel')

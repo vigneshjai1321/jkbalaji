@@ -192,13 +192,31 @@ html:not(:has(.admin-app)) {
   .billing-print-root {
     background: white !important;
   }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
   .invoice-a4-sheet {
     box-shadow: none !important;
     width: 210mm;
     max-width: 210mm;
     margin: 0 auto;
     page-break-after: auto;
-    border: 1px solid #334155 !important;
+    border: 1px solid #1e3a5f !important;
+    overflow: visible !important;
+  }
+  .invoice-preview-modal {
+    position: static !important;
+    inset: auto !important;
+    background: white !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    height: auto !important;
+    max-height: none !important;
   }
   .invoice-a4-sheet--compact {
     min-height: 297mm;
@@ -219,14 +237,47 @@ html:not(:has(.admin-app)) {
   .invoice-lines tr {
     page-break-inside: avoid;
   }
+
+  body:has(.plot-quotation-sheet) {
+    overflow: visible !important;
+    background: white !important;
+  }
+  body:has(.plot-quotation-sheet) .admin-app > aside,
+  body:has(.plot-quotation-sheet) .admin-app > div > header {
+    display: none !important;
+  }
+  body:has(.plot-quotation-sheet) .admin-app main {
+    padding: 0 !important;
+    background: white !important;
+  }
+  body:has(.plot-quotation-sheet) .no-print {
+    display: none !important;
+  }
+  .plot-quotation-sheet {
+    box-shadow: none !important;
+    width: 210mm;
+    max-width: 210mm;
+    margin: 0 auto;
+    page-break-after: auto;
+  }
+  .plot-quotation-sheet table tr {
+    page-break-inside: avoid;
+  }
 }
 
 .invoice-a4-sheet {
   width: 100%;
   max-width: 210mm;
   box-sizing: border-box;
-  border: 1px solid #475569;
+  border: 1px solid #1e3a5f;
   background: #fff;
+}
+.invoice-a4-sheet,
+.invoice-a4-sheet * {
+  box-sizing: border-box;
+}
+.invoice-preview-modal {
+  box-sizing: border-box;
 }
 
 .invoice-a4-sheet--compact {

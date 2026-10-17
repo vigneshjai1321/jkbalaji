@@ -5,7 +5,7 @@ import { adminFetch } from '../../lib/admin-api';
 import { clsx } from 'clsx';
 import { useAdminTheme } from './AdminShell';
 
-const COLUMNS = ['NEW', 'CONTACTED', 'INTERESTED', 'NEGOTIATION', 'WON', 'LOST'] as const;
+const COLUMNS = ['NEW', 'CONTACTED', 'INTERESTED', 'QUALIFIED', 'NEGOTIATION', 'WON', 'LOST'] as const;
 
 type Lead = {
   id: string;

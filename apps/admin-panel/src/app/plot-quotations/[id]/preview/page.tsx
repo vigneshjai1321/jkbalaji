@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Printer } from 'lucide-react';
 import { adminFetch } from '@/lib/admin-api';
-import { formatInr, formatSqft } from '@/lib/plot-currency';
 import { AdminBtnPrimary, AdminBtnSecondary } from '@/components/admin/AdminForm';
+import { PlotQuotationDocument } from '@/components/admin/PlotQuotationDocument';
 
 type Q = {
   id: string;
@@ -55,13 +56,16 @@ export default function PlotQuotationPreviewPage() {
 
   return (
     <>
-      <div className="print:hidden max-w-3xl mx-auto p-4 space-y-3">
-        <Link href={`/projects/${data.plot.project ? '' : ''}`} className="text-sm text-blue-700 hover:underline">
-          ← Back
+      <div className="no-print print:hidden max-w-3xl mx-auto p-4 space-y-3">
+        <Link href="/plots" className="text-sm text-blue-700 hover:underline">
+          ← Plots
         </Link>
         <div className="flex flex-wrap gap-2">
           <AdminBtnSecondary type="button" onClick={() => window.print()}>
-            Print A4
+            <span className="inline-flex items-center gap-2">
+              <Printer className="h-4 w-4" aria-hidden />
+              Print A4
+            </span>
           </AdminBtnSecondary>
           <AdminBtnSecondary type="button" disabled={reserve.isPending} onClick={() => reserve.mutate()}>
             Record reservation
@@ -75,66 +79,24 @@ export default function PlotQuotationPreviewPage() {
         )}
       </div>
 
-      <article className="mx-auto max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 md:p-12 shadow print:shadow-none print:p-12">
-        <header className="border-b pb-4 mb-6">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Quotation — not a sale deed</p>
-          <h1 className="text-2xl font-bold mt-1">{data.plot.project?.name ?? 'JK Nagar'}</h1>
-          <p className="text-sm text-slate-600 mt-1">Date: {today}</p>
-          {data.validUntil ? <p className="text-sm text-slate-600">Valid until: {data.validUntil.slice(0, 10)}</p> : null}
-        </header>
-
-        <section className="grid sm:grid-cols-2 gap-6 text-sm mb-8">
-          <div>
-            <h2 className="font-semibold text-slate-700">Customer</h2>
-            <p className="mt-1">{data.customer.name}</p>
-            <p>{data.customer.phone}</p>
-            {data.customer.email ? <p>{data.customer.email}</p> : null}
-            {data.customer.address ? <p className="whitespace-pre-line">{data.customer.address}</p> : null}
-          </div>
-          <div>
-            <h2 className="font-semibold text-slate-700">Plot</h2>
-            <p className="mt-1">Plot no. {data.plot.plotNumber}</p>
-            <p>Area: {formatSqft(data.plot.areaSqft)} sq ft</p>
-            <p>Rate: {formatInr(data.pricePerSqftInr)} / sq ft</p>
-          </div>
-        </section>
-
-        <table className="w-full text-sm mb-6">
-          <tbody>
-            <tr className="border-b">
-              <td className="py-2">Base plot price</td>
-              <td className="py-2 text-right tabular-nums">{formatInr(data.basePlotPriceInr)}</td>
-            </tr>
-            {data.charges.map((c) => (
-              <tr key={c.label} className="border-b">
-                <td className="py-2">{c.label}</td>
-                <td className="py-2 text-right tabular-nums">{formatInr(c.amountInr)}</td>
-              </tr>
-            ))}
-            <tr className="font-bold text-base">
-              <td className="py-3">Estimated total payable</td>
-              <td className="py-3 text-right tabular-nums">{formatInr(data.estimatedTotalInr)}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        {data.broker ? (
-          <section className="text-sm mb-6 rounded-lg border p-3 bg-slate-50">
-            <h2 className="font-semibold">Broker</h2>
-            <p>
-              {data.broker.name} · {data.broker.phone}
-            </p>
-            {data.commissionExpectedInr ? (
-              <p>
-                Commission: {formatInr(data.commissionExpectedInr)} ({data.commissionPaidBy === 'BUYER' ? 'buyer' : 'seller'} side)
-              </p>
-            ) : null}
-          </section>
-        ) : null}
-
-        {data.notes ? <p className="text-sm mb-4">{data.notes}</p> : null}
-        <p className="text-xs text-slate-600 border-t pt-4">{data.terms ?? 'Figures are estimates until verified with registration authorities.'}</p>
-      </article>
+      <PlotQuotationDocument
+        projectName={data.plot.project?.name ?? 'JK Nagar'}
+        plotNumber={data.plot.plotNumber}
+        areaSqft={data.plot.areaSqft}
+        pricePerSqftInr={data.pricePerSqftInr}
+        basePlotPriceInr={data.basePlotPriceInr}
+        additionalTotalInr={data.additionalTotalInr}
+        estimatedTotalInr={data.estimatedTotalInr}
+        validUntil={data.validUntil}
+        documentDate={today}
+        customer={data.customer}
+        broker={data.broker}
+        commissionExpectedInr={data.commissionExpectedInr}
+        commissionPaidBy={data.commissionPaidBy}
+        charges={data.charges}
+        notes={data.notes}
+        terms={data.terms}
+      />
     </>
   );
 }

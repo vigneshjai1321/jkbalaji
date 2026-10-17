@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
@@ -13,18 +14,33 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { RealEstateUnit } from '../auth/business-unit.decorator.js';
+import { BusinessUnitGuard } from '../auth/business-unit.guard.js';
+import { COMMISSION_READ_ROLES, COMMISSION_WRITE_ROLES } from './commission-roles.js';
+import { CommissionRateService } from './commission-rate.service.js';
+import { CommissionRateSource } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { ActivityLogService } from '../../common/activity-log.service.js';
 import { commissionExpected, commissionStatus } from './measure.js';
 import { JournalValidationError, parseJournalWrite } from './journal-validation.js';
 import { PlotValidationError, isPhase3ComingSoon, parsePlotWrite, syncPlotBasePrice } from './plot-validation.js';
+import {
+  canPlaceManualHold,
+  canReleaseManualHold,
+  latestManualHoldFromEvents,
+  serializeHoldDetail,
+} from './plot-hold.js';
 
 @Controller({ path: 'admin/erp', version: '1' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BusinessUnitGuard)
+@RealEstateUnit()
 export class AdminErpController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: ActivityLogService,
+    private readonly commissionRates: CommissionRateService,
   ) {}
 
   private plotInclude = {
@@ -154,10 +170,100 @@ export class AdminErpController {
   }
 
   @Get('plots/:id')
-  plot(@Param('id') id: string) {
-    return this.prisma.plot.findUniqueOrThrow({
+  async plot(@Param('id') id: string) {
+    const row = await this.prisma.plot.findUniqueOrThrow({
       where: { id },
-      include: this.plotInclude,
+      include: {
+        ...this.plotInclude,
+        events: { orderBy: { createdAt: 'desc' }, take: 30 },
+      },
+    });
+    const activeReservation = await this.prisma.plotQuotation.count({
+      where: { plotId: id, status: 'RESERVATION' },
+    });
+    const holdState = latestManualHoldFromEvents(row.events);
+    return {
+      ...row,
+      holdInfo: {
+        activeQuotationReservation: activeReservation > 0,
+        manualHold: holdState.meta,
+        manualHoldReleased: holdState.released,
+      },
+    };
+  }
+
+  @Post('plots/:id/hold')
+  async holdPlot(
+    @Param('id') id: string,
+    @Body() body: { customerId?: string; reason?: string; notes?: string; holdUntil?: string },
+  ) {
+    const customerId = body.customerId?.trim();
+    if (!customerId) throw new BadRequestException('Customer is required to place a hold.');
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId }, select: { id: true, name: true } });
+    if (!customer) throw new NotFoundException('Customer not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const plot = await tx.plot.findUnique({ where: { id }, select: { id: true, plotNumber: true, status: true, archived: true } });
+      if (!plot) throw new NotFoundException('Plot not found');
+      if (plot.archived) throw new BadRequestException('Archived plots cannot be held.');
+      if (!canPlaceManualHold(plot.status)) {
+        throw new ConflictException(`Plot cannot be held (current status: ${plot.status}).`);
+      }
+      const updated = await tx.plot.updateMany({
+        where: { id, status: 'AVAILABLE' },
+        data: { status: 'RESERVED', customerId },
+      });
+      if (updated.count === 0) throw new ConflictException('Plot is no longer available.');
+      const detail = serializeHoldDetail({
+        type: 'MANUAL_HOLD',
+        customerId,
+        reason: body.reason?.trim() || undefined,
+        notes: body.notes?.trim() || undefined,
+        holdUntil: body.holdUntil?.trim() || undefined,
+      });
+      await tx.plotEvent.create({ data: { plotId: id, action: 'HOLD', detail } });
+      await this.audit.log({
+        action: 'UPDATE',
+        entity: 'plot',
+        entityId: id,
+        summary: `Plot ${plot.plotNumber} held for ${customer.name}`,
+      });
+      return tx.plot.findUnique({ where: { id }, include: this.plotInclude });
+    });
+  }
+
+  @Post('plots/:id/release-hold')
+  async releasePlotHold(@Param('id') id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const plot = await tx.plot.findUnique({
+        where: { id },
+        select: { id: true, plotNumber: true, status: true, archived: true },
+      });
+      if (!plot) throw new NotFoundException('Plot not found');
+      if (plot.archived) throw new BadRequestException('Archived plots cannot be updated.');
+      const reservationCount = await tx.plotQuotation.count({
+        where: { plotId: id, status: 'RESERVATION' },
+      });
+      if (!canReleaseManualHold(plot.status, reservationCount > 0)) {
+        throw new ConflictException(
+          reservationCount > 0
+            ? 'This plot is reserved via a quotation. Void or complete that workflow first.'
+            : `Plot hold cannot be released (status: ${plot.status}).`,
+        );
+      }
+      const updated = await tx.plot.updateMany({
+        where: { id, status: 'RESERVED' },
+        data: { status: 'AVAILABLE', customerId: null },
+      });
+      if (updated.count === 0) throw new ConflictException('Plot is not on hold.');
+      await tx.plotEvent.create({ data: { plotId: id, action: 'HOLD_RELEASED', detail: 'Manual hold released' } });
+      await this.audit.log({
+        action: 'UPDATE',
+        entity: 'plot',
+        entityId: id,
+        summary: `Plot ${plot.plotNumber} hold released`,
+      });
+      return tx.plot.findUnique({ where: { id }, include: this.plotInclude });
     });
   }
 
@@ -372,37 +478,206 @@ export class AdminErpController {
     };
   }
 
+  @Get('commission-rate-effective')
+  @Roles(...COMMISSION_READ_ROLES)
+  async commissionRateEffective(@Query('brokerId') brokerId?: string, @Query('projectId') projectId?: string) {
+    if (!brokerId) throw new BadRequestException('brokerId is required');
+    return this.commissionRates.resolveEffectiveRate({ brokerId, projectId: projectId || null });
+  }
+
   @Get('brokers')
-  brokers() {
-    return this.prisma.broker.findMany({ orderBy: { name: 'asc' }, include: { _count: { select: { commissions: true, properties: true } } } });
+  @Roles(...COMMISSION_READ_ROLES)
+  async brokers(
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('q') q?: string,
+    @Query('active') active?: string,
+  ) {
+    if (!page) {
+      const where: Prisma.BrokerWhereInput = {};
+      if (active === '1') where.isActive = true;
+      if (active === '0') where.isActive = false;
+      const term = q?.trim();
+      if (term) {
+        where.OR = [
+          { name: { contains: term, mode: 'insensitive' } },
+          { phone: { contains: term, mode: 'insensitive' } },
+          { code: { contains: term, mode: 'insensitive' } },
+          { email: { contains: term, mode: 'insensitive' } },
+        ];
+      }
+      return this.prisma.broker.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        include: { _count: { select: { commissions: true, properties: true, plots: true } } },
+      });
+    }
+    const p = Math.max(1, Number(page) || 1);
+    const size = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
+    const where: Prisma.BrokerWhereInput = {};
+    if (active === '1') where.isActive = true;
+    if (active === '0') where.isActive = false;
+    const term = q?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
+        { code: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+    const [total, data] = await Promise.all([
+      this.prisma.broker.count({ where }),
+      this.prisma.broker.findMany({
+        where,
+        skip: (p - 1) * size,
+        take: size,
+        orderBy: { name: 'asc' },
+        include: { _count: { select: { commissions: true, properties: true } } },
+      }),
+    ]);
+    return { data, page: p, pageSize: size, total, totalPages: Math.max(1, Math.ceil(total / size)) };
+  }
+
+  @Get('brokers/:id')
+  @Roles(...COMMISSION_READ_ROLES)
+  async brokerDetail(@Param('id') id: string) {
+    const broker = await this.prisma.broker.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { commissions: true, plots: true, plotQuotations: true } },
+        commissions: {
+          where: { voided: false },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          select: { id: true, expectedInr: true, paidInr: true, status: true, createdAt: true },
+        },
+      },
+    });
+    if (!broker) throw new NotFoundException('Broker not found');
+    const totals = broker.commissions.reduce(
+      (acc, c) => {
+        acc.expected += Number(c.expectedInr);
+        acc.paid += Number(c.paidInr);
+        return acc;
+      },
+      { expected: 0, paid: 0 },
+    );
+    const effective = await this.commissionRates.resolveEffectiveRate({ brokerId: id });
+    return {
+      ...broker,
+      effectiveCommission: effective,
+      totals: {
+        expected: Math.round(totals.expected * 100) / 100,
+        paid: Math.round(totals.paid * 100) / 100,
+        outstanding: Math.round(Math.max(0, totals.expected - totals.paid) * 100) / 100,
+      },
+    };
   }
 
   @Post('brokers')
-  createBroker(@Body() body: { name?: string; phone?: string; email?: string; notes?: string }) {
+  @Roles(...COMMISSION_WRITE_ROLES)
+  async createBroker(
+    @Body()
+    body: {
+      name?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      code?: string;
+      notes?: string;
+      commissionKind?: 'PERCENTAGE' | 'FIXED';
+      commissionRate?: number | null;
+    },
+  ) {
     const name = body.name?.trim();
     const phone = body.phone?.trim();
     if (!name || name.length < 2) throw new BadRequestException('Broker name is required');
     if (!phone || phone.length < 8) throw new BadRequestException('A valid phone number is required');
+    const code = body.code?.trim() || null;
+    if (code) {
+      const dup = await this.prisma.broker.findFirst({ where: { code } });
+      if (dup) throw new BadRequestException('Broker code already in use');
+    }
+    let commissionKind = body.commissionKind ?? null;
+    let commissionRate: number | null = body.commissionRate != null ? Number(body.commissionRate) : null;
+    if (commissionKind && commissionRate != null) {
+      commissionRate = this.commissionRates.validateRate(commissionKind, commissionRate);
+    } else {
+      commissionKind = null;
+      commissionRate = null;
+    }
     return this.prisma.broker.create({
-      data: { name, phone, email: body.email?.trim() || null, notes: body.notes?.trim() || null },
+      data: {
+        name,
+        phone,
+        code,
+        address: body.address?.trim() || null,
+        email: body.email?.trim() || null,
+        notes: body.notes?.trim() || null,
+        commissionKind,
+        commissionRate,
+      },
     });
   }
 
   @Patch('brokers/:id')
-  updateBroker(@Param('id') id: string, @Body() body: { name?: string; phone?: string; email?: string; notes?: string; isActive?: boolean }) {
+  @Roles(...COMMISSION_WRITE_ROLES)
+  async updateBroker(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      code?: string;
+      notes?: string;
+      isActive?: boolean;
+      commissionKind?: 'PERCENTAGE' | 'FIXED' | null;
+      commissionRate?: number | null;
+    },
+  ) {
+    const current = await this.prisma.broker.findUnique({ where: { id } });
+    if (!current) throw new NotFoundException('Broker not found');
+    const code = body.code !== undefined ? body.code?.trim() || null : undefined;
+    if (code) {
+      const dup = await this.prisma.broker.findFirst({ where: { code, NOT: { id } } });
+      if (dup) throw new BadRequestException('Broker code already in use');
+    }
+    let commissionKind = body.commissionKind;
+    let commissionRate = body.commissionRate;
+    if (body.commissionKind !== undefined || body.commissionRate !== undefined) {
+      if (commissionKind == null || commissionRate == null) {
+        commissionKind = null;
+        commissionRate = null;
+      } else {
+        commissionRate = this.commissionRates.validateRate(commissionKind, Number(commissionRate));
+      }
+      await this.commissionRates.auditBrokerRateChange(
+        id,
+        { kind: commissionKind, rate: commissionRate },
+        { kind: current.commissionKind, rate: current.commissionRate != null ? Number(current.commissionRate) : null },
+      );
+    }
     return this.prisma.broker.update({
       where: { id },
       data: {
         ...(body.name ? { name: body.name.trim() } : {}),
         ...(body.phone ? { phone: body.phone.trim() } : {}),
         ...(body.email !== undefined ? { email: body.email.trim() || null } : {}),
+        ...(body.address !== undefined ? { address: body.address.trim() || null } : {}),
+        ...(code !== undefined ? { code } : {}),
         ...(body.notes !== undefined ? { notes: body.notes.trim() || null } : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+        ...(body.commissionKind !== undefined ? { commissionKind } : {}),
+        ...(body.commissionRate !== undefined ? { commissionRate } : {}),
       },
     });
   }
 
   @Get('commissions')
+  @Roles(...COMMISSION_READ_ROLES)
   commissions() {
     return this.prisma.commission.findMany({
       orderBy: { updatedAt: 'desc' },
@@ -415,6 +690,7 @@ export class AdminErpController {
   }
 
   @Post('commissions')
+  @Roles(...COMMISSION_WRITE_ROLES)
   async createCommission(
     @Body()
     body: {
@@ -440,6 +716,8 @@ export class AdminErpController {
         projectId: body.projectId || null,
         kind: body.kind,
         rate: Number(body.rate),
+        rateSource: CommissionRateSource.MANUAL,
+        calculationBasis: 'BASE_PLOT',
         saleValueInr: body.saleValueInr ?? null,
         expectedInr: expected,
         paidInr: paid,
@@ -451,6 +729,7 @@ export class AdminErpController {
   }
 
   @Patch('commissions/:id')
+  @Roles(...COMMISSION_WRITE_ROLES)
   async updateCommission(@Param('id') id: string, @Body() body: { paidInr?: number; notes?: string }) {
     const current = await this.prisma.commission.findUniqueOrThrow({ where: { id } });
     const paid = body.paidInr === undefined ? Number(current.paidInr) : Number(body.paidInr);

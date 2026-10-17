@@ -32,6 +32,8 @@ export type ProjectWriteInput = {
   published: boolean;
   lifecycle?: ProjectLifecycleValue;
   notes?: string | null;
+  commissionKind?: 'PERCENTAGE' | 'FIXED' | null;
+  commissionRate?: number | null;
 };
 
 export class ProjectValidationError extends Error {
@@ -103,6 +105,20 @@ export function parseProjectWrite(body: Record<string, unknown>, partial: boolea
     throw new ProjectValidationError('Publication must be true or false');
   } else {
     out.published = body.published;
+  }
+
+  if (body.commissionKind !== undefined || body.commissionRate !== undefined) {
+    if (body.commissionKind == null || body.commissionKind === '') {
+      out.commissionKind = null;
+      out.commissionRate = null;
+    } else if (body.commissionKind === 'PERCENTAGE' || body.commissionKind === 'FIXED') {
+      out.commissionKind = body.commissionKind;
+      const rate = Number(body.commissionRate);
+      if (!Number.isFinite(rate) || rate < 0) throw new ProjectValidationError('Commission rate must be zero or more');
+      out.commissionRate = Math.round(rate * 100) / 100;
+    } else {
+      throw new ProjectValidationError('Commission kind must be PERCENTAGE or FIXED');
+    }
   }
 
   return out;

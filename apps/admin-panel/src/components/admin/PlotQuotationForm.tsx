@@ -108,27 +108,38 @@ export function PlotQuotationForm({ projectId, projectName, initialPlotId }: { p
       return;
     }
     const handle = setTimeout(() => {
-      adminFetch<PreviewTotals>('/erp/plot-quotations/preview', {
-        method: 'POST',
-        body: JSON.stringify({
-          plotId,
-          pricePerSqftInr: Number(rate),
-          charges: chargePayload,
-          broker: brokerId
-            ? {
-                kind: commissionKind,
-                rate: Number(commissionRate || 0),
-                paidBy: commissionPaidBy,
-                includeInTotal: includeCommissionInTotal,
-              }
-            : undefined,
-        }),
-      })
-        .then(setPreview)
+      adminFetch<PreviewTotals & { resolvedBrokerRate?: { kind: string; rate: number } | null }>(
+        '/erp/plot-quotations/preview',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            plotId,
+            projectId,
+            pricePerSqftInr: Number(rate),
+            charges: chargePayload,
+            brokerId: brokerId || undefined,
+            broker: brokerId
+              ? {
+                  kind: commissionKind,
+                  rate: Number(commissionRate || 0),
+                  paidBy: commissionPaidBy,
+                  includeInTotal: includeCommissionInTotal,
+                }
+              : undefined,
+          }),
+        },
+      )
+        .then((data) => {
+          if (data.resolvedBrokerRate && !commissionRate) {
+            setCommissionKind(data.resolvedBrokerRate.kind as 'PERCENTAGE' | 'FIXED');
+            setCommissionRate(String(data.resolvedBrokerRate.rate));
+          }
+          setPreview(data);
+        })
         .catch(() => setPreview(null));
     }, 400);
     return () => clearTimeout(handle);
-  }, [plotId, rate, chargePayload, brokerId, commissionKind, commissionRate, commissionPaidBy, includeCommissionInTotal]);
+  }, [plotId, projectId, rate, chargePayload, brokerId, commissionKind, commissionRate, commissionPaidBy, includeCommissionInTotal]);
 
   const save = useMutation({
     mutationFn: (status: 'DRAFT' | 'QUOTED') =>

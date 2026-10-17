@@ -1,17 +1,24 @@
-import { Body, Controller, ConflictException, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, ConflictException, Delete, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { UserRole } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
+import { KjplAlertsService } from '../kjpl/kjpl-alerts.service.js';
 
 const PROJECT_EDITORS = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.REAL_ESTATE_MANAGER] as const;
 const JEWELLERY_EDITORS = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.GOLD_MANAGER] as const;
 
+type AuthedRequest = Request & { user?: { role?: string } };
+
 @Controller({ path: 'admin', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class AdminResourcesController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly kjplAlerts: KjplAlertsService,
+  ) {}
 
   @Get('projects/:id')
   project(@Param('id') id: string) {
@@ -97,7 +104,18 @@ export class AdminResourcesController {
   }
 
   @Get('notifications')
-  notifications() {
-    return this.prisma.notification.findMany({ orderBy: { createdAt: 'desc' }, take: 20 });
+  async notifications(@Req() req: AuthedRequest) {
+    const rows = await this.prisma.notification.findMany({ orderBy: { createdAt: 'desc' }, take: 30 });
+    return this.kjplAlerts.filterNotificationsForRole(req.user?.role, rows);
+  }
+
+  @Patch('notifications/:id/read')
+  async markNotificationRead(@Param('id') id: string, @Req() req: AuthedRequest) {
+    const row = await this.prisma.notification.findUnique({ where: { id } });
+    if (!row) return { ok: false };
+    const visible = this.kjplAlerts.filterNotificationsForRole(req.user?.role, [row]);
+    if (!visible.length) return { ok: false };
+    await this.prisma.notification.update({ where: { id }, data: { readAt: new Date() } });
+    return { ok: true };
   }
 }

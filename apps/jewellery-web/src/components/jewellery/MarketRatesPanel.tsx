@@ -39,28 +39,16 @@ export function MarketRatesPanel({ data, compact }: { data: MarketRatesResponse;
         ) : null}
       </div>
 
-      {isKjpl ? (
+      {isKjpl && data.gold?.price22kPerGram == null ? (
         <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-xl border border-amber-200/80 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-amber-800">Gold MJDTA (excl. GST)</p>
+            <p className="text-xs font-medium text-amber-800">22K / gram</p>
             <p className="mt-1 text-2xl font-semibold text-stone-900 tabular-nums">₹{fmt(data.kjpl!.goldWithoutGstInr)}</p>
           </div>
-          {data.kjpl!.goldWithGstInr != null ? (
-            <div className="rounded-xl border border-amber-200/80 bg-white p-4 shadow-sm">
-              <p className="text-xs font-medium text-amber-800">Gold MJDTA (incl. GST)</p>
-              <p className="mt-1 text-2xl font-semibold text-stone-900 tabular-nums">₹{fmt(data.kjpl!.goldWithGstInr)}</p>
-            </div>
-          ) : null}
           <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-stone-600">Silver MJDTA (excl. GST)</p>
+            <p className="text-xs font-medium text-stone-600">Silver / gram</p>
             <p className="mt-1 text-2xl font-semibold text-stone-900 tabular-nums">₹{fmt(data.kjpl!.silverWithoutGstInr)}</p>
           </div>
-          {data.kjpl!.silverWithGstInr != null ? (
-            <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-              <p className="text-xs font-medium text-stone-600">Silver MJDTA (incl. GST)</p>
-              <p className="mt-1 text-2xl font-semibold text-stone-900 tabular-nums">₹{fmt(data.kjpl!.silverWithGstInr)}</p>
-            </div>
-          ) : null}
         </div>
       ) : (
         <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -74,6 +62,12 @@ export function MarketRatesPanel({ data, compact }: { data: MarketRatesResponse;
             <div className="rounded-xl border border-amber-200/80 bg-white p-4 shadow-sm">
               <p className="text-xs font-medium text-amber-800">Gold 22K / gram</p>
               <p className="mt-1 text-2xl font-semibold text-stone-900 tabular-nums">₹{fmt(data.gold.price22kPerGram)}</p>
+            </div>
+          ) : null}
+          {data.gold?.price22kPerGram != null ? (
+            <div className="rounded-xl border border-amber-200/80 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-amber-800">1 Sovereign · 22K · 8 g</p>
+              <p className="mt-1 text-2xl font-semibold text-stone-900 tabular-nums">₹{fmt(Math.round(data.gold.price22kPerGram * 8 * 100) / 100)}</p>
             </div>
           ) : null}
           {data.silver?.pricePerGram != null ? (

@@ -136,6 +136,19 @@ enum CommissionPaidBy {
   BUYER
 }
 
+enum CommissionRateSource {
+  GLOBAL
+  BROKER
+  PROJECT
+  MANUAL
+}
+
+enum CommissionSettingsScope {
+  GLOBAL
+  BROKER
+  PROJECT
+}
+
 enum ExpenseCategory {
   SALARY
   RENT
@@ -180,6 +193,8 @@ model User {
   assignedLeads Lead[]        @relation("LeadAssignee")
   leadNotes     LeadNote[]
   leadFollowups LeadFollowup[] @relation("FollowupAssignee")
+  commissionPaymentsRecorded CommissionPayment[] @relation("CommissionPaymentRecorder")
+  commissionSettingsChanges  CommissionSettingsAudit[]
 
   @@map("users")
 }
@@ -253,6 +268,8 @@ model Project {
   published   Boolean            @default(false)
   lifecycle   ProjectLifecycle   @default(ACTIVE)
   notes       String?
+  commissionKind  CommissionKind? @map("commission_kind")
+  commissionRate  Decimal?        @map("commission_rate") @db.Decimal(14, 2)
   createdAt   DateTime           @default(now()) @map("created_at")
   updatedAt   DateTime           @updatedAt @map("updated_at")
   properties  Property[]
@@ -303,10 +320,14 @@ model Property {
 
 model Broker {
   id          String       @id @default(cuid())
+  code        String?      @unique
   name        String
   phone       String
   email       String?
+  address     String?
   notes       String?
+  commissionKind  CommissionKind? @map("commission_kind")
+  commissionRate  Decimal?        @map("commission_rate") @db.Decimal(14, 2)
   isActive    Boolean      @default(true) @map("is_active")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
@@ -315,6 +336,7 @@ model Broker {
   plots       Plot[]
   plotQuotations PlotQuotation[]
 
+  @@index([phone])
   @@map("brokers")
 }
 
@@ -332,18 +354,63 @@ model Commission {
   project       Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
   kind          CommissionKind
   rate          Decimal             @db.Decimal(14, 2)
+  rateSource    CommissionRateSource @default(MANUAL) @map("rate_source")
+  calculationBasis String           @default("BASE_PLOT") @map("calculation_basis")
   saleValueInr  Decimal?            @map("sale_value_inr") @db.Decimal(14, 2)
   expectedInr   Decimal             @map("expected_inr") @db.Decimal(14, 2)
   paidInr       Decimal             @default(0) @map("paid_inr") @db.Decimal(14, 2)
   status        CommissionPayStatus @default(PENDING)
   paidOn        DateTime?           @map("paid_on") @db.Date
+  voided        Boolean             @default(false)
+  needsReview   Boolean             @default(false) @map("needs_review")
   notes         String?
   createdAt     DateTime            @default(now()) @map("created_at")
   updatedAt     DateTime            @updatedAt @map("updated_at")
+  payments      CommissionPayment[]
 
   @@index([brokerId])
   @@index([status])
+  @@index([projectId])
+  @@index([createdAt(sort: Desc)])
+  @@index([plotId])
   @@map("commissions")
+}
+
+model CommissionPayment {
+  id            String     @id @default(cuid())
+  commissionId  String     @map("commission_id")
+  commission    Commission @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  amountInr     Decimal    @map("amount_inr") @db.Decimal(14, 2)
+  paidAt        DateTime   @map("paid_at") @db.Date
+  method        String?
+  reference     String?    @map("reference")
+  notes         String?
+  recordedById  String?    @map("recorded_by_id")
+  recordedBy    User?      @relation("CommissionPaymentRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  reversedAt    DateTime?  @map("reversed_at")
+  reversalOfId  String?    @unique @map("reversal_of_id")
+  reversalOf    CommissionPayment? @relation("PaymentReversal", fields: [reversalOfId], references: [id], onDelete: SetNull)
+  reversal      CommissionPayment? @relation("PaymentReversal")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  @@index([commissionId, paidAt(sort: Desc)])
+  @@map("commission_payments")
+}
+
+model CommissionSettingsAudit {
+  id           String                  @id @default(cuid())
+  scope        CommissionSettingsScope
+  entityId     String?                 @map("entity_id")
+  kind         CommissionKind
+  rate         Decimal                 @db.Decimal(14, 2)
+  previousKind CommissionKind?         @map("previous_kind")
+  previousRate Decimal?                @map("previous_rate") @db.Decimal(14, 2)
+  changedById  String?                 @map("changed_by_id")
+  changedBy    User?                   @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime                @default(now()) @map("created_at")
+
+  @@index([scope, createdAt(sort: Desc)])
+  @@map("commission_settings_audit")
 }
 
 model Lead {

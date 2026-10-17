@@ -3,10 +3,13 @@ import { UserRole } from '../../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
+import { JewelleryUnit } from '../auth/business-unit.decorator.js';
+import { BusinessUnitGuard } from '../auth/business-unit.guard.js';
 import { GoldApiService } from './goldapi.service.js';
 
 @Controller({ path: 'admin/goldapi', version: '1' })
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BusinessUnitGuard)
+@JewelleryUnit()
 @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.GOLD_MANAGER)
 export class GoldApiAdminController {
   constructor(private readonly goldApi: GoldApiService) {}

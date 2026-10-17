@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { adminFetch } from '@/lib/admin-api';
 import { AdminPanel } from '@/components/admin/AdminPanel';
 import { PlotsDataTable } from '@/components/admin/PlotsDataTable';
+import { PlotHoldDialog } from '@/components/admin/PlotHoldDialog';
 import { clsx } from 'clsx';
 import { formatInr, formatSqft } from '@/lib/plot-currency';
 
@@ -40,12 +41,18 @@ type PlotSummary = {
   unpricedAvailable?: number;
 };
 
-type ImportReview = {
-  id: string;
-  suppliedPlotNumber: string;
-  areaSqft: string;
-  reason: string;
-  sourceNote: string | null;
+type ImportReviewGroup = {
+  plotNumber: string;
+  areasSqft: number[];
+  reasons: string[];
+  reviewIds: string[];
+  latestAt: string;
+};
+
+type ImportReviewResponse = {
+  groups: ImportReviewGroup[];
+  conflictCount: number;
+  rawCount: number;
 };
 
 type ProjectOption = { id: string; name: string; slug: string; phase: string };
@@ -86,6 +93,7 @@ export function PlotWorkspace({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<PlotRow | null>(null);
+  const [pendingHold, setPendingHold] = useState<PlotRow | null>(null);
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const effectiveProjectId = fixedProjectId ?? (projectFilter || undefined);
@@ -123,9 +131,10 @@ export function PlotWorkspace({
 
   const projectSlug = (projects.data ?? []).find((p) => p.id === effectiveProjectId)?.slug;
 
+  const [importReviewOpen, setImportReviewOpen] = useState(false);
   const importReviews = useQuery({
     queryKey: ['plot-import-reviews', effectiveProjectId],
-    queryFn: () => adminFetch<ImportReview[]>(`/erp/plots/import/reviews?projectId=${effectiveProjectId}`),
+    queryFn: () => adminFetch<ImportReviewResponse>(`/erp/plots/import/reviews?projectId=${effectiveProjectId}`),
     enabled: Boolean(effectiveProjectId),
   });
 
@@ -285,17 +294,32 @@ export function PlotWorkspace({
         </div>
       ) : null}
 
-      {(importReviews.data?.length ?? 0) > 0 ? (
+      {(importReviews.data?.conflictCount ?? 0) > 0 ? (
         <div className="border-b border-amber-500/30 bg-amber-500/10 p-4 text-sm">
-          <h3 className="font-semibold text-amber-900">Older import review items</h3>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left font-semibold text-amber-900"
+            onClick={() => setImportReviewOpen((o) => !o)}
+          >
+            <span>
+              Import review — {importReviews.data!.conflictCount} plot-number conflict
+              {importReviews.data!.conflictCount === 1 ? '' : 's'}
+            </span>
+            <span className="text-xs font-normal opacity-80">{importReviewOpen ? 'Hide' : 'Show'}</span>
+          </button>
           <ul className="mt-2 space-y-2">
-            {importReviews.data!.map((r) => (
-              <li key={r.id} className="rounded-lg border border-amber-300/50 bg-white/80 p-2 text-slate-800">
-                <span className="font-mono font-semibold">{r.suppliedPlotNumber}</span> — {formatSqft(r.areaSqft)} sq ft
-                <p className="text-xs text-slate-600 mt-1">{r.reason}</p>
+            {(importReviewOpen ? importReviews.data!.groups : importReviews.data!.groups.slice(0, 3)).map((g) => (
+              <li key={g.plotNumber} className="rounded-lg border border-amber-300/50 bg-white/80 p-2 text-slate-800">
+                <span className="font-mono font-semibold">Plot {g.plotNumber}</span>
+                <span className="text-slate-600"> — conflicting areas: </span>
+                {g.areasSqft.map((a) => formatSqft(a)).join(' and ')} sq ft
+                {importReviewOpen && g.reasons[0] ? <p className="text-xs text-slate-600 mt-1">{g.reasons[0]}</p> : null}
               </li>
             ))}
           </ul>
+          {!importReviewOpen && importReviews.data!.groups.length > 3 ? (
+            <p className="text-xs mt-2 text-amber-900/80">Expand to see all conflicts and details.</p>
+          ) : null}
         </div>
       ) : null}
 
@@ -402,7 +426,8 @@ export function PlotWorkspace({
             sortKey={sortKey}
             sortDir={sortDir}
             onToggleSort={toggleSort}
-            onDelete={(row) => setPendingDelete(row)}
+            onDelete={setPendingDelete}
+            onHold={setPendingHold}
             fixedProjectId={fixedProjectId}
           />
           <div className="flex items-center justify-between gap-2 px-4 py-3 text-sm">
@@ -433,6 +458,21 @@ export function PlotWorkspace({
           </div>
         </>
       )}
+
+      {pendingHold ? (
+        <PlotHoldDialog
+          plotId={pendingHold.id}
+          plotNumber={pendingHold.plotNumber}
+          open
+          onClose={() => setPendingHold(null)}
+          onSuccess={() => {
+            void qc.invalidateQueries({ queryKey: ['erp-plots'] });
+            void qc.invalidateQueries({ queryKey: ['erp-plots-summary'] });
+            setMessage({ type: 'ok', text: `Plot ${pendingHold.plotNumber} is on hold.` });
+            setPendingHold(null);
+          }}
+        />
+      ) : null}
 
       {pendingDelete ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">

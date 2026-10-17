@@ -2,6 +2,7 @@ import PDFDocument from 'pdfkit';
 import type { Customer, Invoice, InvoiceLine } from '../../generated/prisma/client.js';
 import type { SellerProfile } from './billing-seller.js';
 import { amountInWordsInr } from './amount-in-words.js';
+import { invoicePaymentLabel } from './invoice-calculations.js';
 
 type Inv = Invoice & { lines: InvoiceLine[]; customer: Customer };
 
@@ -87,8 +88,9 @@ export function renderInvoicePdf(inv: Inv, seller: SellerProfile): Promise<Buffe
     if (inv.dueDate) {
       doc.text(`Due: ${new Date(inv.dueDate).toLocaleDateString('en-IN')}`, metaX, doc.y + 2, { width: 160, align: 'right' });
     }
-    if (inv.status && !['DRAFT', 'PREVIEW'].includes(inv.status)) {
-      doc.text(`Status: ${inv.status.replace(/_/g, ' ')}`, metaX, doc.y + 2, { width: 160, align: 'right' });
+    if (inv.status && !['PREVIEW', 'SAMPLE'].includes(inv.status)) {
+      const label = invoicePaymentLabel(inv.status, Number(inv.totalInr), Number(inv.amountPaidInr));
+      doc.text(`Payment: ${label}`, metaX, doc.y + 2, { width: 160, align: 'right' });
     }
 
     y = Math.max(doc.y, y) + 14;

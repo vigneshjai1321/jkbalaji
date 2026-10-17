@@ -98,3 +98,9 @@ export function paymentStatus(totalInr: number, amountPaidInr: number): 'UNPAID'
   if (paid >= total) return 'PAID';
   return 'PARTIALLY_PAID';
 }
+
+/** Customer-facing label. Partial balances stay Unpaid; status is never forced ahead of recorded payments. */
+export function invoicePaymentLabel(status: string, totalInr: number, amountPaidInr: number): 'Paid' | 'Unpaid' | 'Cancelled' {
+  if (status === 'CANCELLED') return 'Cancelled';
+  return paymentStatus(totalInr, amountPaidInr) === 'PAID' ? 'Paid' : 'Unpaid';
+}

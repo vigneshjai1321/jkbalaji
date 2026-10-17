@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ActivityLogService } from '../../common/activity-log.service.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { BusinessUnitGuard } from '../auth/business-unit.guard.js';
 import { AdminAuditController } from './admin-audit.controller.js';
 import { AdminController } from './admin.controller.js';
 import { AdminCrmController } from './admin-crm.controller.js';
@@ -9,12 +10,16 @@ import { ProjectCatalogService } from './project-catalog.service.js';
 import { AdminUsersController } from './admin-users.controller.js';
 import { AdminErpController } from './admin-erp.controller.js';
 import { AdminPlotSalesController } from './admin-plot-sales.controller.js';
+import { AdminCommissionController } from './admin-commission.controller.js';
+import { CommissionRateService } from './commission-rate.service.js';
+import { CommissionPaymentService } from './commission-payment.service.js';
 import { AdminResourcesController } from './admin-resources.controller.js';
 import { GoldApiAdminController } from '../goldapi/goldapi-admin.controller.js';
 import { AdminMailController } from './admin-mail.controller.js';
+import { KjplModule } from '../kjpl/kjpl.module.js';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, KjplModule],
   controllers: [
     AdminMailController,
     GoldApiAdminController,
@@ -25,7 +30,15 @@ import { AdminMailController } from './admin-mail.controller.js';
     AdminCrmController,
     AdminErpController,
     AdminPlotSalesController,
+    AdminCommissionController,
   ],
-  providers: [AdminDashboardService, ActivityLogService, ProjectCatalogService],
+  providers: [
+    AdminDashboardService,
+    ActivityLogService,
+    ProjectCatalogService,
+    CommissionRateService,
+    CommissionPaymentService,
+    BusinessUnitGuard,
+  ],
 })
 export class AdminModule {}

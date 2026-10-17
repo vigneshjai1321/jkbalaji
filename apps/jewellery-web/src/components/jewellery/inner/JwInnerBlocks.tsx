@@ -87,8 +87,7 @@ export function JwRatesExplainer() {
     <JwInnerBand className="bg-white">
       <h2 className="text-base font-semibold text-stone-900">About these rates</h2>
       <p className="mt-2 text-sm text-stone-600 max-w-2xl leading-relaxed">
-        Values are MJDTA reference rates fetched from kjpl.in for customer information. They are not per-gram showroom selling
-        prices. Making charges, purity, GST, and shop policy apply at billing — confirm in store.
+        22K and silver are per gram from KJPL. 24K is calculated from 22K. One sovereign is 22K × 8 g. Making charges and GST are extra.
       </p>
     </JwInnerBand>
   );
