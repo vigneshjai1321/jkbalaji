@@ -133,11 +133,11 @@ if ($StaleReleaseManifest -and $StaleReleaseManifest -notmatch '^removed-src-pat
   throw "Invalid -StaleReleaseManifest: must match removed-src-paths*.txt"
 }
 if ($StaleReleaseManifest -eq 'removed-src-paths.release-b0ce589.txt') {
-  Write-Warning "StaleReleaseManifest targets b0ce589 orphans — do NOT use when the tarball includes commissions, plot-hold, or tab-unlock WIP."
+  Write-Warning 'StaleReleaseManifest targets b0ce589 orphans; do not use when the tarball includes newer ERP features.'
 }
 
 function Invoke-RemotePrunePreview([string]$ManifestRel) {
-  $cmd = "cd $RemoteRoot && PRUNE_DRY_RUN=1 PRUNE_STRICT=1 bash deployment/scripts/prune-stale-paths.sh $RemoteRoot $RemoteRoot/deployment/scripts/$ManifestRel"
+  $cmd = "cd ${RemoteRoot} && PRUNE_DRY_RUN=1 PRUNE_STRICT=1 bash deployment/scripts/prune-stale-paths.sh ${RemoteRoot} ${RemoteRoot}/deployment/scripts/${ManifestRel}"
   Write-Host "Remote prune preview: $ManifestRel"
   $code = Invoke-Ssh $cmd
   if ($code -ne 0) { throw "Remote prune preview failed (exit $code)" }
