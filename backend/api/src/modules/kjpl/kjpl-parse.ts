@@ -42,7 +42,7 @@ export function parseKjplMjdtaRates(html: string): KjplParsedRates | null {
     if (!block) return { gold: null as number | null, silver: null as number | null, updated: null as string | null };
     const goldM = block.match(/GOLD\s*:?\s*(?:\(\s*₹\s*\)|₹)?\s*([\d,]+(?:\.\d+)?)/i);
     const silverM = block.match(/SILVER\s*:?\s*(?:\(\s*₹\s*\)|₹)?\s*([\d,]+(?:\.\d+)?)/i);
-    const updatedM = block.match(/UPDATED\s*:?\s*([0-9\-:\sapm]+)/i);
+    const updatedM = block.match(/UPDATED\s*:?\s*(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}:\d{2}\s*(?:am|pm)?)/i);
     return {
       gold: goldM ? parseInrAmount(goldM[1]!) : null,
       silver: silverM ? parseInrAmount(silverM[1]!) : null,

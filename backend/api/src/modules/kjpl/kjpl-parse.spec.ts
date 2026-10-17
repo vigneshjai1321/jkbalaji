@@ -11,7 +11,7 @@ describe('parseKjplMjdtaRates', () => {
     expect(r!.silverWithoutGstInr).toBe(245);
     expect(r!.goldWithGstInr).toBe(14095.55);
     expect(r!.silverWithGstInr).toBe(252.35);
-    expect(r!.sourceUpdatedAtText).toContain('13-10-2026');
+    expect(r!.sourceUpdatedAtText).toBe('13-10-2026 09:44:10 am');
   });
 
   it('rejects empty or non-html input', () => {

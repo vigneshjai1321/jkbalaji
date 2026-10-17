@@ -8,19 +8,28 @@ export function AdminPanel({
   description,
   children,
   actions,
+  headerExtra,
 }: {
   title: string;
   description?: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  headerExtra?: React.ReactNode;
 }) {
   const theme = useAdminTheme();
   const dark = theme === 'dark';
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-[1.65rem] font-bold tracking-tight">{title}</h1>
+        <div className="min-w-0">
+          {headerExtra ? (
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+              <h1 className="shrink-0 text-2xl md:text-[1.65rem] font-bold tracking-tight">{title}</h1>
+              <div className="w-full min-w-0 sm:w-auto">{headerExtra}</div>
+            </div>
+          ) : (
+            <h1 className="text-2xl md:text-[1.65rem] font-bold tracking-tight">{title}</h1>
+          )}
           {description ? <p className={`text-sm md:text-[15px] mt-1.5 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{description}</p> : null}
         </div>
         {actions}

@@ -1,194 +1,163 @@
 'use client';
 
-import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
-import { AdminBtnPrimary, useAdminInputClass } from '@/components/admin/AdminForm';
+import { AdminBtnPrimary } from '@/components/admin/AdminForm';
 
-type Rate = { id: string; rate22k: string; rate24k: string; effectiveDate: string };
+type BoardQuote = {
+  description: 'GOLD' | 'SILVER';
+  buying: number;
+  selling: number;
+  high: number;
+  low: number;
+};
 
-type MarketRates = {
-  provider: string;
+type BoardStatus = {
+  health: 'fresh' | 'stale' | 'unavailable' | 'updating';
+  isLive: boolean;
   fetchedAt: string | null;
-  isStale: boolean;
-  staleMessage: string | null;
-  configured: boolean;
-  schedulerEnabled: boolean;
-  gold: {
-    price24kPerGram: number | null;
-    price22kPerGram: number | null;
-    price18kPerGram: number | null;
-  } | null;
-  silver: { pricePerGram: number | null } | null;
-  usage: { yearMonth: string; requestCount: number; monthlyLimit: number };
+  lastError: string | null;
+  unitLabel: string;
+  rows: Array<BoardQuote | null>;
 };
 
-type GoldApiStatus = {
-  configured: boolean;
-  schedulerEnabled: boolean;
-  market: MarketRates;
-  usage: MarketRates['usage'];
+type KjplStatus = {
+  health: 'fresh' | 'stale' | 'error' | 'unavailable' | 'updating';
+  enabled: boolean;
+  updating?: boolean;
+  board?: BoardStatus;
 };
 
-function fmt(n: number | null | undefined) {
+type Notification = { id: string; title: string; body: string; readAt: string | null };
+
+function inr(n: number | null | undefined) {
   if (n == null || !Number.isFinite(n)) return '—';
-  return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  const whole = Number.isInteger(n);
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+function when(iso: string | null | undefined) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function boardLabel(board: BoardStatus | undefined, pending: boolean) {
+  if (pending || board?.health === 'updating') return 'Updating';
+  if (!board || board.health === 'unavailable') return 'Unavailable';
+  if (board.health === 'stale' || !board.isLive) return 'Stale';
+  return 'Live';
 }
 
 export default function GoldRatesPage() {
   const qc = useQueryClient();
-  const input = useAdminInputClass();
-  const [rate22k, setRate22k] = useState('');
-  const [rate24k, setRate24k] = useState('');
-  const [actionMsg, setActionMsg] = useState('');
-
-  const history = useQuery({
-    queryKey: ['gold-rates-history'],
-    queryFn: () => adminFetch<Rate[]>('/gold-rates'),
+  const kjpl = useQuery({
+    queryKey: ['kjpl-status'],
+    queryFn: () => adminFetch<KjplStatus>('/kjpl-rates/status'),
+    refetchInterval: 60_000,
   });
-
-  const goldApi = useQuery({
-    queryKey: ['goldapi-status'],
-    queryFn: () => adminFetch<GoldApiStatus>('/goldapi/status'),
+  const notifications = useQuery({
+    queryKey: ['admin-notifications'],
+    queryFn: () => adminFetch<Notification[]>('/notifications'),
   });
+  const alert = (notifications.data ?? []).find(
+    (n) => !n.readAt && n.body.includes('[JEWELLERY_KJPL]') && n.title.includes('Failed'),
+  );
 
-  const create = useMutation({
+  const refresh = useMutation({
     mutationFn: () =>
-      adminFetch('/gold-rates', {
+      adminFetch<{ ok: boolean; message: string; boardOk?: boolean; boardMessage?: string }>('/kjpl-rates/refresh', {
         method: 'POST',
-        body: JSON.stringify({ rate22k: Number(rate22k), rate24k: Number(rate24k) }),
       }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['gold-rates-history'] });
-      qc.invalidateQueries({ queryKey: ['admin-dashboard'] });
-      setRate22k('');
-      setRate24k('');
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['kjpl-status'] });
+      void qc.invalidateQueries({ queryKey: ['gold-rates-history'] });
+      void qc.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['admin-notifications'] });
     },
   });
 
-  const verify = useMutation({
-    mutationFn: () => adminFetch<{ gold: boolean; silver: boolean; message: string }>('/goldapi/verify', { method: 'POST' }),
-    onSuccess: (r) => {
-      setActionMsg(r.message);
-      qc.invalidateQueries({ queryKey: ['goldapi-status'] });
-    },
-  });
-
-  const sync = useMutation({
-    mutationFn: () => adminFetch<{ ok: boolean; message: string }>('/goldapi/sync', { method: 'POST' }),
-    onSuccess: (r) => {
-      setActionMsg(r.message);
-      qc.invalidateQueries({ queryKey: ['goldapi-status'] });
-    },
-  });
-
-  const latest = history.data?.[0];
-  const market = goldApi.data?.market;
+  const status = kjpl.data;
+  const board = status?.board;
+  const label = boardLabel(board, refresh.isPending || Boolean(status?.updating));
+  const tone =
+    label === 'Live'
+      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      : label === 'Updating'
+        ? 'bg-amber-50 text-amber-900 border-amber-200'
+        : 'bg-red-50 text-red-800 border-red-200';
+  const byName = new Map((board?.rows ?? []).filter((row): row is BoardQuote => row != null).map((row) => [row.description, row]));
+  const showValues = label === 'Live' || label === 'Stale' || label === 'Updating';
 
   return (
-    <div className="space-y-6">
-      <AdminPanel
-        title="GoldAPI Market Benchmarks"
-        description="Cached from GoldAPI.io once daily (09:00 IST). Billing uses shop rates below — not these benchmarks."
-      >
-        {goldApi.isLoading ? <p className="p-6 text-sm opacity-70">Loading market data…</p> : null}
-        {market ? (
-          <>
-            <dl className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5">
-                <dt className="text-xs font-medium text-amber-700">24K benchmark / g</dt>
-                <dd className="text-2xl font-bold mt-2">{fmt(market.gold?.price24kPerGram ?? null)}</dd>
-              </div>
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5">
-                <dt className="text-xs font-medium text-amber-700">22K benchmark / g</dt>
-                <dd className="text-2xl font-bold mt-2">{fmt(market.gold?.price22kPerGram ?? null)}</dd>
-              </div>
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5">
-                <dt className="text-xs font-medium text-amber-700">18K benchmark / g</dt>
-                <dd className="text-2xl font-bold mt-2">{fmt(market.gold?.price18kPerGram ?? null)}</dd>
-              </div>
-              <div className="rounded-2xl border border-white/10 p-5">
-                <dt className="text-xs font-medium opacity-70">Silver / g</dt>
-                <dd className="text-2xl font-bold mt-2">{fmt(market.silver?.pricePerGram ?? null)}</dd>
-              </div>
-            </dl>
-            <div className="px-6 pb-4 text-sm space-y-1 opacity-80">
-              <p>
-                Provider: {market.provider}
-                {market.fetchedAt
-                  ? ` · Last fetch ${new Date(market.fetchedAt).toLocaleString('en-IN')}`
-                  : ' · No successful fetch yet'}
-              </p>
-              <p>
-                API usage ({market.usage.yearMonth}): {market.usage.requestCount} / {market.usage.monthlyLimit} requests
-              </p>
-              <p>
-                Token configured: {market.configured ? 'Yes' : 'No'} · Auto scheduler:{' '}
-                {market.schedulerEnabled ? 'Enabled' : 'Disabled until XAU & XAG verify'}
-              </p>
-              {market.isStale && market.staleMessage ? (
-                <p className="text-amber-400">{market.staleMessage}</p>
-              ) : null}
-            </div>
-          </>
-        ) : null}
-        <div className="flex flex-wrap gap-3 p-6 border-t border-white/5">
-          <AdminBtnPrimary type="button" onClick={() => verify.mutate()} disabled={verify.isPending}>
-            Verify GoldAPI Access
-          </AdminBtnPrimary>
-          <button
-            type="button"
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium hover:bg-white/5"
-            onClick={() => sync.mutate()}
-            disabled={sync.isPending}
-          >
-            Run Fetch Now
-          </button>
-          {actionMsg ? <p className="text-sm w-full text-emerald-400/90">{actionMsg}</p> : null}
+    <div className="max-w-4xl space-y-4 text-slate-900">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tone}`}>{label}</span>
+          <p className="mt-2 text-xs text-slate-500">KJPL market board · Last update {when(board?.fetchedAt)}</p>
         </div>
-      </AdminPanel>
+        <AdminBtnPrimary type="button" disabled={refresh.isPending || status?.enabled === false} onClick={() => refresh.mutate()}>
+          {refresh.isPending ? 'Refreshing…' : 'Refresh'}
+        </AdminBtnPrimary>
+      </div>
 
-      <AdminPanel title="Shop Gold Rates (Billing)" description="Manual showroom rates used for invoices and billing.">
-        {latest ? (
-          <dl className="grid sm:grid-cols-3 gap-6 p-6 text-center">
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6">
-              <dt className="text-xs uppercase tracking-widest text-emerald-600">22K / g</dt>
-              <dd className="text-3xl font-bold mt-2">₹{Number(latest.rate22k).toLocaleString('en-IN')}</dd>
-            </div>
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6">
-              <dt className="text-xs uppercase tracking-widest text-emerald-600">24K / g</dt>
-              <dd className="text-3xl font-bold mt-2">₹{Number(latest.rate24k).toLocaleString('en-IN')}</dd>
-            </div>
-            <div className="rounded-2xl border border-white/10 p-6">
-              <dt className="text-xs uppercase tracking-widest opacity-60">Effective</dt>
-              <dd className="text-lg font-semibold mt-2">{new Date(latest.effectiveDate).toLocaleDateString('en-IN')}</dd>
-            </div>
-          </dl>
-        ) : null}
-        <form
-          className="grid gap-3 sm:grid-cols-3 p-6 border-t border-white/5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (rate22k && rate24k) create.mutate();
-          }}
-        >
-          <input type="number" placeholder="22K shop rate" value={rate22k} onChange={(e) => setRate22k(e.target.value)} className={input} required />
-          <input type="number" placeholder="24K shop rate" value={rate24k} onChange={(e) => setRate24k(e.target.value)} className={input} required />
-          <AdminBtnPrimary type="submit">Set Shop Rate</AdminBtnPrimary>
-        </form>
-      </AdminPanel>
+      {label === 'Stale' ? (
+        <p className="text-sm text-red-800">Showing the last valid board. These values are not live.</p>
+      ) : null}
+      {label === 'Unavailable' ? <p className="text-sm text-red-800">Market board is unavailable. No current rates are shown.</p> : null}
+      {board?.lastError && label !== 'Live' ? <p className="text-xs text-red-700">{board.lastError}</p> : null}
+      {alert ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+          <p className="font-semibold">{alert.title}</p>
+          <p className="mt-1 whitespace-pre-line text-xs">{alert.body.replace(/^\[JEWELLERY_KJPL\]\n?/, '')}</p>
+        </div>
+      ) : null}
+      {refresh.isError ? <p className="text-sm text-red-700">{(refresh.error as Error).message}</p> : null}
+      {refresh.data && !refresh.data.ok ? <p className="text-sm text-red-700">Shop billing rates: {refresh.data.message}</p> : null}
+      {refresh.data?.boardOk === false ? <p className="text-sm text-red-700">Market board: {refresh.data.boardMessage}</p> : null}
 
-      <AdminPanel title="Shop Rate History">
-        <AdminTable
-          headers={['Date', '22K', '24K']}
-          rows={(history.data ?? []).map((r) => [
-            new Date(r.effectiveDate).toLocaleDateString('en-IN'),
-            `₹${Number(r.rate22k).toLocaleString('en-IN')}`,
-            `₹${Number(r.rate24k).toLocaleString('en-IN')}`,
-          ])}
-        />
-      </AdminPanel>
+      {kjpl.isLoading ? <p className="text-sm text-slate-500">Loading rates…</p> : null}
+      {kjpl.isError ? <p className="text-sm text-red-700">Rates could not be loaded.</p> : null}
+
+      <div className="min-w-0 overflow-x-auto rounded-md border border-amber-300 bg-[#fffdf8]">
+        <table className="w-full border-collapse text-xs text-slate-900 sm:text-sm">
+          <thead>
+            <tr className="bg-amber-50 text-[11px] uppercase tracking-wide text-amber-950">
+              <th className="w-[22%] border border-amber-200 px-2 py-2 text-left font-semibold sm:px-3">Description</th>
+              <th className="w-[26%] border border-amber-200 px-2 py-2 text-right font-semibold sm:px-3">Buying Rate</th>
+              <th className="w-[26%] border border-amber-200 px-2 py-2 text-right font-semibold sm:px-3">Selling Rate</th>
+              <th className="w-[26%] border border-amber-200 px-2 py-2 text-right font-semibold sm:px-3">High / Low</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(['GOLD', 'SILVER'] as const).map((name) => {
+              const row = showValues ? byName.get(name) : undefined;
+              return (
+                <tr key={name} className="bg-white">
+                  <th className="border border-amber-200 px-2 py-2.5 text-left text-sm font-semibold text-slate-900 sm:px-3">{name}</th>
+                  <td className="whitespace-nowrap border border-amber-200 px-2 py-2.5 text-right font-medium tabular-nums sm:px-3">{inr(row?.buying)}</td>
+                  <td className="whitespace-nowrap border border-amber-200 px-2 py-2.5 text-right font-medium tabular-nums sm:px-3">{inr(row?.selling)}</td>
+                  <td className="whitespace-nowrap border border-amber-200 px-2 py-2.5 text-right tabular-nums sm:px-3">
+                    <span className="block font-medium">
+                      <span className="mr-1 text-[10px] font-semibold uppercase text-amber-800">High</span>
+                      {inr(row?.high)}
+                    </span>
+                    <span className="block text-slate-700">
+                      <span className="mr-1 text-[10px] font-semibold uppercase text-amber-800">Low</span>
+                      {inr(row?.low)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-slate-500">{board?.unitLabel ?? 'INR · KJPL board quote'} · Reference rates only. Shop billing rates are unchanged.</p>
     </div>
   );
 }
