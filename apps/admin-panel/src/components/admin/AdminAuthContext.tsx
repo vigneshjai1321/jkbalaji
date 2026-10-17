@@ -1,8 +1,9 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { ADMIN_UNAUTHORIZED_EVENT } from '../../lib/admin-auth-events';
-import { adminFetch, adminLogin } from '../../lib/admin-api';
+import { ADMIN_TAB_UNLOCK_REQUIRED_EVENT, ADMIN_UNAUTHORIZED_EVENT } from '../../lib/admin-auth-events';
+import { adminFetch, adminLogin, adminVerifyTab } from '../../lib/admin-api';
+import { clearTabSession, hasTabSession } from '../../lib/admin-tab-session';
 
 export type AdminUser = {
   id: string;
@@ -18,7 +19,9 @@ type Ctx = {
   ready: boolean;
   token: string | null;
   user: AdminUser | null;
+  tabUnlocked: boolean;
   login: (email: string, password: string) => Promise<void>;
+  verifyTab: (password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -28,16 +31,39 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [tabUnlocked, setTabUnlocked] = useState(false);
+
+  useEffect(() => {
+    const onTabLock = () => setTabUnlocked(false);
+    setTabUnlocked(hasTabSession());
+    window.addEventListener(ADMIN_TAB_UNLOCK_REQUIRED_EVENT, onTabLock);
+    return () => window.removeEventListener(ADMIN_TAB_UNLOCK_REQUIRED_EVENT, onTabLock);
+  }, []);
 
   useEffect(() => {
     const onUnauthorized = () => {
       localStorage.removeItem('jk_token');
       localStorage.removeItem('jk_user');
+      clearTabSession();
       setToken(null);
       setUser(null);
+      setTabUnlocked(false);
     };
     window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
     return () => window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'jk_token' && !e.newValue) {
+        clearTabSession();
+        setToken(null);
+        setUser(null);
+        setTabUnlocked(false);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   useEffect(() => {
@@ -53,6 +79,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) {
           setToken(t);
           setUser(me);
+          setTabUnlocked(hasTabSession());
           localStorage.setItem('jk_user', JSON.stringify(me));
         }
       } catch {
@@ -77,6 +104,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('jk_user', JSON.stringify(res.user));
     setToken(res.accessToken);
     setUser(res.user);
+    await adminVerifyTab(password, res.accessToken);
+    setTabUnlocked(true);
+  }, []);
+
+  const verifyTab = useCallback(async (password: string) => {
+    await adminVerifyTab(password);
+    setTabUnlocked(true);
   }, []);
 
   const logout = useCallback(async () => {
@@ -87,11 +121,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
     localStorage.removeItem('jk_token');
     localStorage.removeItem('jk_user');
+    clearTabSession();
     setToken(null);
     setUser(null);
+    setTabUnlocked(false);
   }, [token]);
 
-  const value = useMemo(() => ({ ready, token, user, login, logout }), [ready, token, user, login, logout]);
+  const value = useMemo(
+    () => ({ ready, token, user, tabUnlocked, login, verifyTab, logout }),
+    [ready, token, user, tabUnlocked, login, verifyTab, logout],
+  );
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }

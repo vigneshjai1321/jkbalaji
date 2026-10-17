@@ -6,7 +6,9 @@ import { ActivityLogService } from '../../common/activity-log.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtStrategy } from './jwt.strategy.js';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { RolesGuard } from './roles.guard.js';
+import { BusinessUnitGuard } from './business-unit.guard.js';
 
 @Module({
   imports: [
@@ -21,7 +23,7 @@ import { RolesGuard } from './roles.guard.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, ActivityLogService, RolesGuard],
-  exports: [AuthService, RolesGuard, JwtModule],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, ActivityLogService, RolesGuard, BusinessUnitGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, BusinessUnitGuard, JwtModule],
 })
 export class AuthModule {}

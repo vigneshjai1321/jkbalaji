@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { adminFetch, adminApiBase } from '@/lib/admin-api';
+import { adminAuthHeaders, adminFetch, adminApiBase } from '@/lib/admin-api';
 import { clsx } from 'clsx';
 import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
 import { AdminBtnSecondary } from '@/components/admin/AdminForm';
@@ -49,9 +49,8 @@ export default function GstReportsPage() {
   const t = report.data?.totals;
 
   function download(kind: 'csv' | 'pdf') {
-    const token = localStorage.getItem('jk_token');
     const url = `${adminApiBase()}/admin/billing/reports/gst/export.${kind}?${params}`;
-    fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    fetch(url, { headers: adminAuthHeaders() })
       .then((r) => r.blob())
       .then((blob) => {
         const a = document.createElement('a');

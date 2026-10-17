@@ -1,4 +1,11 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import type { Request } from 'express';
@@ -6,6 +13,9 @@ import { ActivityAction } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { ActivityLogService } from '../../common/activity-log.service.js';
 import { clientIp, parseUserAgent } from '../../common/request-meta.js';
+import { parseTabId, tabPayloadMatches, TAB_UNLOCK_TYPE, type TabTokenPayload } from './tab-unlock.js';
+
+export const TAB_UNLOCK_REQUIRED = 'TAB_UNLOCK_REQUIRED';
 
 const PW_CHANGE_RATE = new Map<string, number[]>();
 const PW_CHANGE_WINDOW_MS = 15 * 60_000;
@@ -114,6 +124,58 @@ export class AuthService {
         lastLoginAt: user.lastLoginAt,
       },
     };
+  }
+
+  requireTabUnlock(user: { sub: string; sid?: string }, headers: Record<string, unknown>) {
+    const tabId = parseTabId(headers['x-tab-id'] ?? headers['X-Tab-Id']);
+    const tabTokenRaw = headers['x-tab-token'] ?? headers['X-Tab-Token'];
+    const tabToken = typeof tabTokenRaw === 'string' ? tabTokenRaw.trim() : '';
+    if (!tabId || !tabToken) {
+      throw new ForbiddenException({ code: TAB_UNLOCK_REQUIRED, message: 'Tab verification required' });
+    }
+    let payload: TabTokenPayload;
+    try {
+      payload = this.jwt.verify(tabToken) as TabTokenPayload;
+    } catch {
+      throw new ForbiddenException({ code: TAB_UNLOCK_REQUIRED, message: 'Tab verification required' });
+    }
+    if (!tabPayloadMatches(user, tabId, payload)) {
+      throw new ForbiddenException({ code: TAB_UNLOCK_REQUIRED, message: 'Tab verification required' });
+    }
+  }
+
+  async verifyTab(userId: string, sessionId: string | undefined, password: string, tabIdRaw: string, req?: Request) {
+    const tabId = parseTabId(tabIdRaw);
+    if (!tabId) throw new BadRequestException('Invalid tab id');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
+
+    if (sessionId) {
+      const log = await this.prisma.loginLog.findFirst({
+        where: { id: sessionId, userId, success: true, logoutAt: null },
+      });
+      if (!log) throw new UnauthorizedException('Session expired');
+    }
+
+    const ok = await passwordMatches(user.passwordHash, user.passwordHashAlt, password);
+    if (!ok) {
+      const ip = req ? clientIp(req) : undefined;
+      await this.safeLoginLog({
+        userId,
+        emailAttempt: user.email,
+        success: false,
+        ipAddress: ip,
+        failReason: 'Tab unlock failed',
+      });
+      throw new UnauthorizedException('Incorrect password');
+    }
+
+    const tabToken = await this.jwt.signAsync(
+      { sub: userId, sid: sessionId, tid: tabId, typ: TAB_UNLOCK_TYPE },
+      { expiresIn: '8h' },
+    );
+    return { tabToken };
   }
 
   async me(userId: string) {

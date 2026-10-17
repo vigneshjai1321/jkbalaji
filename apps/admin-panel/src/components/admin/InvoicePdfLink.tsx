@@ -1,12 +1,11 @@
 'use client';
 
-import { adminApiBase } from '../../lib/admin-api';
+import { adminApiBase, adminAuthHeaders } from '../../lib/admin-api';
 
 export function InvoicePdfLink({ id }: { id: string }) {
   async function openPdf() {
-    const token = localStorage.getItem('jk_token');
     const res = await fetch(`${adminApiBase()}/admin/billing/invoices/${id}/pdf`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: adminAuthHeaders(),
     });
     if (!res.ok) return;
     const blob = await res.blob();

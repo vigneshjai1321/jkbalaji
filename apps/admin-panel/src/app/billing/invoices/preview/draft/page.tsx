@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AdminBtnSecondary } from '@/components/admin/AdminForm';
 import { InvoicePrintShell } from '@/components/billing/InvoicePrintShell';
-import { adminApiBase } from '@/lib/admin-api';
+import { adminApiBase, adminAuthHeaders } from '@/lib/admin-api';
 import {
   readBillingPreviewSession,
   waitForBillingPreviewSession,
@@ -78,13 +78,9 @@ export default function DraftInvoicePreviewPage() {
   const p = session.preview;
 
   async function downloadPdf() {
-    const token = localStorage.getItem('jk_token');
     const res = await fetch(`${adminApiBase()}/admin/billing/invoices/preview/pdf`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers: adminAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(session!.previewPayload),
     });
     if (!res.ok) {

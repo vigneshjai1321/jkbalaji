@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, HttpCode, Post, Req, UseGua
 import type { Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { SkipTabUnlock } from './skip-tab-unlock.decorator.js';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -14,12 +15,25 @@ export class AuthController {
   }
 
   @Get('me')
+  @SkipTabUnlock()
   @UseGuards(JwtAuthGuard)
   me(@Req() req: Request & { user: { sub: string } }) {
     return this.auth.me(req.user.sub);
   }
 
+  @Post('verify-tab')
+  @SkipTabUnlock()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  verifyTab(
+    @Req() req: Request & { user: { sub: string; sid?: string } },
+    @Body() body: { password?: string; tabId?: string },
+  ) {
+    return this.auth.verifyTab(req.user.sub, req.user.sid, body.password ?? '', body.tabId ?? '', req);
+  }
+
   @Post('logout')
+  @SkipTabUnlock()
   @UseGuards(JwtAuthGuard)
   logout(@Req() req: Request & { user: { sub: string; sid?: string } }) {
     return this.auth.logout(req.user.sub, req.user.sid);
