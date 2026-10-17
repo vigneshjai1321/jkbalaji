@@ -10,10 +10,24 @@ export function filterNavGroupsForRole(groups: NavGroup[], role: string): NavGro
   const canCms = CMS_ROLES.has(role);
   const canWebsiteCatalog = WEBSITE_CATALOG_ROLES.has(role);
 
+  const adminOnlyHrefs = new Set([
+    '/users',
+    '/accounting',
+    '/expenses',
+    '/reports',
+    '/audit',
+    '/cms',
+    '/analytics',
+  ]);
+
   return groups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
+        if (scope !== 'all' && adminOnlyHrefs.has(item.href)) return false;
+        if (scope === 'real-estate' && item.href === '/inventory') return false;
+        if (scope === 'jewellery' && item.href === '/settings') return false;
+        if (scope !== 'all' && item.href === '/') return false;
         if (scope === 'real-estate' && group.title === 'Jewellery') return false;
         if (scope === 'jewellery' && group.title === 'Real Estate') return false;
         if (scope === 'real-estate' && item.href === '/commissions') return true;

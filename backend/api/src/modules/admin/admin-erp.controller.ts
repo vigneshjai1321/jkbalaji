@@ -16,7 +16,7 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
-import { RealEstateUnit } from '../auth/business-unit.decorator.js';
+import { JewelleryUnit, RealEstateUnit } from '../auth/business-unit.decorator.js';
 import { BusinessUnitGuard } from '../auth/business-unit.guard.js';
 import { COMMISSION_READ_ROLES, COMMISSION_WRITE_ROLES } from './commission-roles.js';
 import { CommissionRateService } from './commission-rate.service.js';
@@ -442,11 +442,13 @@ export class AdminErpController {
   }
 
   @Get('inventory')
+  @JewelleryUnit()
   inventory() {
     return this.prisma.stockItem.findMany({ orderBy: { name: 'asc' } });
   }
 
   @Post('inventory/adjust')
+  @JewelleryUnit()
   adjustInventory(
     @Body()
     body: { sku: string; name: string; delta: number; unit?: string; movement: 'IN' | 'OUT' | 'TRANSFER' },

@@ -65,7 +65,7 @@ export function AdminLogin({ theme }: { theme: 'dark' | 'light' }) {
             }`}
           >
             <label className={`block text-xs font-semibold uppercase tracking-wide mb-2 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
-              Work email
+              Email or username
             </label>
             <div className="relative mb-4">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />

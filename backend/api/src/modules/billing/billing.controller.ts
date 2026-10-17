@@ -13,15 +13,30 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { InvoiceStatus, InvoiceType } from '../../generated/prisma/client.js';
+import { UserRole } from '../../generated/prisma/client.js';
+import { JewelleryUnit } from '../auth/business-unit.decorator.js';
+import { BusinessUnitGuard } from '../auth/business-unit.guard.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { RolesGuard } from '../auth/roles.guard.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { BillingService, type CreateInvoiceInput, type PreviewInvoiceInput } from './billing.service.js';
 import type { SellerProfile } from './billing-seller.js';
 
 type AuthReq = Request & { user?: { sub?: string } };
 
+const BILLING_ROLES = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+  UserRole.GOLD_MANAGER,
+  UserRole.BILLING_STAFF,
+  UserRole.ACCOUNTANT,
+] as const;
+
 @Controller({ path: 'admin/billing', version: '1' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BusinessUnitGuard)
+@Roles(...BILLING_ROLES)
+@JewelleryUnit()
 export class BillingController {
   constructor(
     private readonly billing: BillingService,

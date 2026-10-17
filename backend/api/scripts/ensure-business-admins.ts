@@ -15,6 +15,7 @@ config({ path: resolve(__dir, '../.env') });
 
 type Spec = {
   email: string;
+  loginId: string;
   name: string;
   role: UserRole;
   passwordEnv: string;
@@ -23,12 +24,14 @@ type Spec = {
 const ACCOUNTS: Spec[] = [
   {
     email: 'realestate_admin@jkbalaji.in',
+    loginId: 'realestateadmin',
     name: 'Real Estate Admin',
     role: UserRole.REAL_ESTATE_MANAGER,
     passwordEnv: 'RE_ADMIN_SETUP_PASSWORD',
   },
   {
     email: 'jewellery_admin@jkbalaji.in',
+    loginId: 'jewelleryadmin',
     name: 'Jewellery Admin',
     role: UserRole.GOLD_MANAGER,
     passwordEnv: 'JEW_ADMIN_SETUP_PASSWORD',
@@ -50,8 +53,12 @@ async function main() {
     const email = spec.email.trim().toLowerCase();
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
+      if (!existing.loginId) {
+        await prisma.user.update({ where: { id: existing.id }, data: { loginId: spec.loginId } });
+        console.log(`UPDATED loginId: ${spec.loginId} for ${email}`);
+      }
       results.push({ email, status: 'EXISTS', role: existing.role });
-      console.log(`EXISTS: ${email} role=${existing.role} — no changes`);
+      console.log(`EXISTS: ${email} role=${existing.role}`);
       continue;
     }
 
@@ -65,6 +72,7 @@ async function main() {
     await prisma.user.create({
       data: {
         email,
+        loginId: spec.loginId,
         passwordHash,
         name: spec.name,
         role: spec.role,

@@ -35,6 +35,7 @@ export function adminApiBase(): string {
 export type AdminUser = {
   id: string;
   email: string;
+  loginId?: string | null;
   name: string;
   role: string;
   department?: string | null;

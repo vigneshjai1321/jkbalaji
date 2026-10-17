@@ -5,6 +5,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { AdminPanel } from '@/components/admin/AdminPanel';
 import { useAdminAuth } from '@/components/admin/AdminAuthContext';
 import { adminFetch } from '@/lib/admin-api';
+import { canChangeOwnPassword, displayLogin } from '@/lib/manager-policy';
 import { useAdminTheme } from '@/components/admin/AdminShell';
 import { clsx } from 'clsx';
 
@@ -26,6 +27,7 @@ export default function ProfileSecurityPage() {
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const hint = strengthHint(next);
+  const mayChangePassword = canChangeOwnPassword(user?.role);
 
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
@@ -74,9 +76,15 @@ export default function ProfileSecurityPage() {
               <dd className="font-medium">{user?.name}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Email</dt>
-              <dd className="font-medium">{user?.email}</dd>
+              <dt className="text-slate-500">Sign-in</dt>
+              <dd className="font-medium">{displayLogin(user)}</dd>
             </div>
+            {user?.email && user.email !== displayLogin(user) ? (
+              <div>
+                <dt className="text-slate-500">Email (record)</dt>
+                <dd className="font-medium text-slate-500">{user.email}</dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-slate-500">Role</dt>
               <dd className="font-medium">{user?.role?.replaceAll('_', ' ')}</dd>
@@ -84,6 +92,7 @@ export default function ProfileSecurityPage() {
           </dl>
         </div>
 
+        {mayChangePassword ? (
         <form
           onSubmit={(e) => void onSave(e)}
           className={clsx('rounded-2xl border p-6 space-y-4', dark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white')}
@@ -159,6 +168,14 @@ export default function ProfileSecurityPage() {
             </button>
           </div>
         </form>
+        ) : (
+          <div className={clsx('rounded-2xl border p-6', dark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white')}>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-500">Password</h2>
+            <p className="mt-3 text-sm text-slate-600">
+              Password changes for your role are handled by a super administrator. Contact them if you need a reset.
+            </p>
+          </div>
+        )}
       </div>
     </AdminPanel>
   );

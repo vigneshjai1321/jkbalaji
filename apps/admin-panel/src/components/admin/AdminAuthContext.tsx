@@ -8,6 +8,7 @@ import { clearTabSession, hasTabSession } from '../../lib/admin-tab-session';
 export type AdminUser = {
   id: string;
   email: string;
+  loginId?: string | null;
   name: string;
   role: string;
   department?: string | null;

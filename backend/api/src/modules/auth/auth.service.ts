@@ -13,6 +13,7 @@ import { ActivityAction } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { ActivityLogService } from '../../common/activity-log.service.js';
 import { clientIp, parseUserAgent } from '../../common/request-meta.js';
+import { assertManagerMayChangeOwnPassword, resolveUserByLogin } from './manager-policy.js';
 import { parseTabId, tabPayloadMatches, TAB_UNLOCK_TYPE, type TabTokenPayload } from './tab-unlock.js';
 
 export const TAB_UNLOCK_REQUIRED = 'TAB_UNLOCK_REQUIRED';
@@ -54,11 +55,12 @@ export class AuthService {
 
   async login(email: string, password: string, req?: Request) {
     const normalizedEmail = email.trim().toLowerCase();
+    const loginAttempt = normalizedEmail;
     const ip = req ? clientIp(req) : undefined;
     const ua = req?.headers['user-agent'];
     const { browser, device } = parseUserAgent(typeof ua === 'string' ? ua : undefined);
 
-    const user = await prismaSafeUser(this.prisma, normalizedEmail);
+    const user = await resolveUserByLogin(this.prisma, loginAttempt);
     if (!user || !user.isActive) {
       await this.safeLoginLog({
         emailAttempt: normalizedEmail,
@@ -118,6 +120,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        loginId: user.loginId,
         name: user.name,
         role: user.role,
         department: user.department,
@@ -184,6 +187,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        loginId: true,
         name: true,
         role: true,
         department: true,
@@ -209,6 +213,8 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
+
+    assertManagerMayChangeOwnPassword(user.role);
 
     const ok = await passwordMatches(user.passwordHash, user.passwordHashAlt, currentPassword);
     if (!ok) throw new UnauthorizedException('Current password is incorrect');
@@ -285,6 +291,3 @@ export class AuthService {
   }
 }
 
-async function prismaSafeUser(prisma: PrismaService, email: string) {
-  return prisma.user.findUnique({ where: { email } });
-}

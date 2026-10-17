@@ -20,6 +20,7 @@ export class AdminUsersController {
       select: {
         id: true,
         email: true,
+        loginId: true,
         name: true,
         role: true,
         department: true,
@@ -63,14 +64,32 @@ export class AdminUsersController {
 
   @Patch(':id')
   update(
+    @Req() req: Request & { user?: { sub: string; role: UserRole } },
     @Param('id') id: string,
     @Body()
-    body: { name?: string; role?: UserRole; department?: string; phone?: string; isActive?: boolean },
+    body: {
+      name?: string;
+      role?: UserRole;
+      department?: string;
+      phone?: string;
+      isActive?: boolean;
+      email?: string;
+      loginId?: string;
+    },
   ) {
+    if (body.role === UserRole.SUPER_ADMIN && req.user?.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only a super administrator can assign the super admin role');
+    }
+    if (id === req.user?.sub) {
+      if (body.role != null || body.isActive === false || body.email != null || body.loginId != null) {
+        throw new ForbiddenException('You cannot change your own role, sign-in, or access level');
+      }
+    }
+    const { email: _e, loginId: _l, ...data } = body;
     return this.prisma.user.update({
       where: { id },
-      data: body,
-      select: { id: true, email: true, name: true, role: true, department: true, isActive: true },
+      data,
+      select: { id: true, email: true, loginId: true, name: true, role: true, department: true, isActive: true },
     });
   }
 
