@@ -18,6 +18,13 @@ PROJECT_CREDENTIALS.txt
 deployment/artifacts/
 deployment/DEPLOYMENT_REPORT.md
 
+# local scratch / one-off deploy packages (not application source)
+Oldfile/
+test-app/
+/jkbalaji-src.tgz
+/patch.tgz
+/admin-panel.tgz
+
 # env (keep the .example templates)
 .env
 .env.*

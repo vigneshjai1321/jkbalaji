@@ -1,6 +1,10 @@
 # Explicit repo-relative paths removed on VPS after tarball extract (stale orphans only).
 # One path per line. No wildcards. Review before adding new entries.
 # See deployment/scripts/prune-stale-paths.sh
+#
+# Preview on VPS (no deletes): PRUNE_DRY_RUN=1 bash deployment/scripts/prune-stale-paths.sh /root/jkbalaji
+# Release-specific orphans (e.g. b0ce589): set STALE_PATHS_EXTRA=removed-src-paths.release-b0ce589.txt in vps-install
+# Compare disk vs git release list (read-only): list-src-orphans.sh
 
 # Legacy monolith admin/jewellery routes inside real-estate-web (split to separate apps)
 apps/real-estate-web/src/app/admin

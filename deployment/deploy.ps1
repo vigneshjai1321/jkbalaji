@@ -16,7 +16,10 @@ param(
   [string]$BuildTargets = "admin,api",
   [switch]$SkipBuildLocal,
   [switch]$SkipSsl,
-  [switch]$SkipDbMigrate
+  [switch]$SkipDbMigrate,
+  [string]$StaleReleaseManifest = "",
+  [switch]$PruneDryRunOnly,
+  [switch]$PrunePreviewOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -126,9 +129,36 @@ Credentials on server: $RemoteRoot/PROJECT_CREDENTIALS.txt (not committed to git
 "@ | Set-Content -Path $Report -Encoding UTF8
 }
 
+if ($StaleReleaseManifest -and $StaleReleaseManifest -notmatch '^removed-src-paths[-a-zA-Z0-9.]*\.txt$') {
+  throw "Invalid -StaleReleaseManifest: must match removed-src-paths*.txt"
+}
+if ($StaleReleaseManifest -eq 'removed-src-paths.release-b0ce589.txt') {
+  Write-Warning "StaleReleaseManifest targets b0ce589 orphans — do NOT use when the tarball includes commissions, plot-hold, or tab-unlock WIP."
+}
+
+function Invoke-RemotePrunePreview([string]$ManifestRel) {
+  $cmd = "cd $RemoteRoot && PRUNE_DRY_RUN=1 PRUNE_STRICT=1 bash deployment/scripts/prune-stale-paths.sh $RemoteRoot $RemoteRoot/deployment/scripts/$ManifestRel"
+  Write-Host "Remote prune preview: $ManifestRel"
+  $code = Invoke-Ssh $cmd
+  if ($code -ne 0) { throw "Remote prune preview failed (exit $code)" }
+}
+
+if ($PrunePreviewOnly) {
+  $manifest = if ($StaleReleaseManifest) { $StaleReleaseManifest } else { 'removed-src-paths.txt' }
+  Invoke-RemotePrunePreview $manifest
+  if ($StaleReleaseManifest -and $StaleReleaseManifest -ne 'removed-src-paths.txt') {
+    Invoke-RemotePrunePreview 'removed-src-paths.txt'
+  }
+  Write-Host "Prune preview complete (no install, no restart)."
+  exit 0
+}
+
 $started = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
 Write-Host "=== JK Balaji deploy started $started ==="
 Write-Host "BUILD_TARGETS=$BuildTargets"
+if ($PruneDryRunOnly) {
+  Write-Warning "-PruneDryRunOnly only dry-runs prune inside vps-install; builds still run. Prefer -PrunePreviewOnly for preview-only SSH."
+}
 
 try {
   Write-Host "1) Local build verification"
@@ -173,6 +203,8 @@ chmod +x deployment/scripts/vps-install.sh deployment/scripts/verify-deploy.sh d
 export BUILD_TARGETS='$BuildTargets'
 export SKIP_DB_SEED=1
 $(if ($SkipDbMigrate) { 'export SKIP_DB_MIGRATE=1' })
+$(if ($StaleReleaseManifest) { "export STALE_PATHS_EXTRA='$StaleReleaseManifest'" })
+$(if ($PruneDryRunOnly) { 'export PRUNE_DRY_RUN=1' })
 bash deployment/scripts/vps-install.sh
 "@
   $prevEap = $ErrorActionPreference

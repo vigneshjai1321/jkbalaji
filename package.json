@@ -40,6 +40,7 @@
     "typecheck:jew": "npm run typecheck -w @jkbalaji/jewellery-web",
     "typecheck:erp": "npm run typecheck -w @jkbalaji/types && npm run typecheck -w @jkbalaji/api && npm run typecheck -w @jkbalaji/admin-panel",
     "test:api": "npm run test -w @jkbalaji/api",
+    "test:deploy-scripts": "bash deployment/scripts/prune-stale-paths.test.sh",
     "test": "npm run test --workspaces --if-present",
     "check:erp": "npm run typecheck:erp && npm run test:api",
     "check:predeploy:admin": "npm run check:erp && npm run build:erp",

@@ -1,0 +1,32 @@
+# Optional manifest: paths that are NOT in git release b0ce589 but may linger on VPS after a partial/dirty deploy.
+# Apply only when deploying that release (or cleaning orphans afterward). Do NOT use when deploying WIP that adds these files.
+# Enable via: STALE_PATHS_EXTRA=removed-src-paths.release-b0ce589.txt (see vps-install.sh)
+
+apps/admin-panel/src/app/brokers/[id]
+apps/admin-panel/src/app/commissions
+apps/admin-panel/src/components/admin/AdminScopeGuard.tsx
+apps/admin-panel/src/components/admin/AdminTabUnlock.tsx
+apps/admin-panel/src/components/admin/PlotBrokerSection.tsx
+apps/admin-panel/src/components/admin/PlotFormFields.tsx
+apps/admin-panel/src/components/admin/PlotHoldDialog.tsx
+apps/admin-panel/src/components/admin/PlotQuotationDocument.tsx
+apps/admin-panel/src/components/billing/InvoiceManageDialogs.tsx
+apps/admin-panel/src/lib/admin-permissions.ts
+apps/admin-panel/src/lib/admin-tab-session.ts
+apps/admin-panel/src/lib/format-inr.ts
+apps/admin-panel/src/lib/role-scope.ts
+apps/admin-panel/src/lib/sovereign-gold.ts
+backend/api/scripts/ensure-business-admins.ts
+backend/api/src/modules/admin/admin-commission.controller.ts
+backend/api/src/modules/admin/commission-payment.service.ts
+backend/api/src/modules/admin/commission-rate.service.spec.ts
+backend/api/src/modules/admin/commission-rate.service.ts
+backend/api/src/modules/admin/commission-roles.ts
+backend/api/src/modules/admin/plot-hold.spec.ts
+backend/api/src/modules/admin/plot-hold.ts
+backend/api/src/modules/admin/plot-import-review.spec.ts
+backend/api/src/modules/admin/plot-import-review.ts
+backend/api/src/modules/auth/skip-tab-unlock.decorator.ts
+backend/api/src/modules/auth/tab-unlock.spec.ts
+backend/api/src/modules/auth/tab-unlock.ts
+database/migrations/20261016120000_commission_management

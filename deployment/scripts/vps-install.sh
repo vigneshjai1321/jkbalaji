@@ -132,8 +132,28 @@ done
 cd "$ROOT"
 export SERVER_API_URL=http://127.0.0.1:4000/api/v1
 
-chmod +x deployment/scripts/prune-stale-paths.sh 2>/dev/null || true
-bash deployment/scripts/prune-stale-paths.sh "$ROOT" "$ROOT/deployment/scripts/removed-src-paths.txt"
+chmod +x deployment/scripts/prune-stale-paths.sh deployment/scripts/list-src-orphans.sh 2>/dev/null || true
+PRUNE_DRY_RUN="${PRUNE_DRY_RUN:-0}"
+run_prune_manifest() {
+  local manifest_rel="$1"
+  local manifest_path="$ROOT/deployment/scripts/$manifest_rel"
+  case "$manifest_rel" in
+    removed-src-paths*.txt) ;;
+    *)
+      fail "invalid STALE_PATHS_EXTRA manifest name: $manifest_rel (must match removed-src-paths*.txt)"
+      ;;
+  esac
+  if [[ ! -f "$manifest_path" ]]; then
+    log "Stale manifest not found (skip): $manifest_rel"
+    return 0
+  fi
+  log "Prune stale paths from: $manifest_rel (PRUNE_DRY_RUN=$PRUNE_DRY_RUN)"
+  DRY_RUN="$PRUNE_DRY_RUN" bash deployment/scripts/prune-stale-paths.sh "$ROOT" "$manifest_path"
+}
+run_prune_manifest "removed-src-paths.txt"
+if [[ -n "${STALE_PATHS_EXTRA:-}" ]]; then
+  run_prune_manifest "$STALE_PATHS_EXTRA"
+fi
 
 rm -rf node_modules
 npm install --force --include=optional
