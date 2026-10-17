@@ -21,9 +21,9 @@ export function AdminPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           {headerExtra ? (
-            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <h1 className="shrink-0 text-2xl md:text-[1.65rem] font-bold tracking-tight">{title}</h1>
               <div className="w-full min-w-0 sm:w-auto">{headerExtra}</div>
             </div>

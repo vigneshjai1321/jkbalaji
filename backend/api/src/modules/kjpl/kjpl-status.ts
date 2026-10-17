@@ -37,6 +37,23 @@ export function validateKjplParsed(r: KjplParsedRates): boolean {
   return true;
 }
 
+export function mjdtaDisplayHealth(
+  cacheFetchedAt: string | null,
+  lastAttemptAt: string | null,
+  lastError: string | null,
+  nowMs: number,
+  staleAfterMs: number,
+  updating: boolean,
+): 'fresh' | 'stale' | 'unavailable' | 'updating' {
+  if (updating) return 'updating';
+  if (!cacheFetchedAt) return 'unavailable';
+  const fetchedMs = new Date(cacheFetchedAt).getTime();
+  const attemptMs = lastAttemptAt ? new Date(lastAttemptAt).getTime() : 0;
+  const failedAfterCache = Boolean(lastError) && attemptMs > fetchedMs;
+  if (failedAfterCache || !Number.isFinite(fetchedMs) || nowMs - fetchedMs > staleAfterMs) return 'stale';
+  return 'fresh';
+}
+
 export function sanitizeKjplError(message: string): string {
   return message.replace(/\s+/g, ' ').trim().slice(0, 240);
 }

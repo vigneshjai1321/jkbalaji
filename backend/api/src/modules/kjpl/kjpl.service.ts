@@ -9,6 +9,7 @@ import {
   KJPL_BOARD_KEY,
   KJPL_CACHE_KEY,
   KJPL_SHOP_SILVER_KEY,
+  mjdtaDisplayHealth,
   sanitizeKjplError,
   validateKjplParsed,
 } from './kjpl-status.js';
@@ -103,8 +104,39 @@ export class KjplService {
           }
         : null,
       shop: await this.readShopRates(),
+      mjdta: this.presentMjdta(cache, status),
       board: await this.readBoardStatus(),
       updating: this.fetchInProgress,
+    };
+  }
+
+  private presentMjdta(
+    cache: CachedPayload | null,
+    status: { lastAttemptAt: string | null; lastErrorMessage: string | null },
+  ) {
+    const rates = cache?.rates ?? null;
+    const health = mjdtaDisplayHealth(
+      cache?.fetchedAt ?? null,
+      status.lastAttemptAt,
+      status.lastErrorMessage,
+      Date.now(),
+      KJPL_STALE_AFTER_MS,
+      this.fetchInProgress,
+    );
+    return {
+      health,
+      isLive: health === 'fresh',
+      label: 'MJDTA RATE',
+      withoutGstLabel: 'MJDTA RATE (Without GST)',
+      withGstLabel: 'MJDTA RATE (With GST)',
+      currency: 'INR',
+      sourceUpdatedAtText: rates?.sourceUpdatedAtText ?? null,
+      fetchedAt: cache?.fetchedAt ?? null,
+      lastError: health === 'fresh' ? null : status.lastErrorMessage,
+      goldWithoutGstInr: rates?.goldWithoutGstInr ?? null,
+      silverWithoutGstInr: rates?.silverWithoutGstInr ?? null,
+      goldWithGstInr: rates?.goldWithGstInr ?? null,
+      silverWithGstInr: rates?.silverWithGstInr ?? null,
     };
   }
 

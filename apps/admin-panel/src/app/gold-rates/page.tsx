@@ -21,11 +21,28 @@ type BoardStatus = {
   rows: Array<BoardQuote | null>;
 };
 
+type MjdtaStatus = {
+  health: 'fresh' | 'stale' | 'unavailable' | 'updating';
+  isLive: boolean;
+  label: string;
+  withoutGstLabel: string;
+  withGstLabel: string;
+  currency: string;
+  sourceUpdatedAtText: string | null;
+  fetchedAt: string | null;
+  lastError: string | null;
+  goldWithoutGstInr: number | null;
+  silverWithoutGstInr: number | null;
+  goldWithGstInr: number | null;
+  silverWithGstInr: number | null;
+};
+
 type KjplStatus = {
   health: 'fresh' | 'stale' | 'error' | 'unavailable' | 'updating';
   enabled: boolean;
   updating?: boolean;
   board?: BoardStatus;
+  mjdta?: MjdtaStatus;
 };
 
 type Notification = { id: string; title: string; body: string; readAt: string | null };
@@ -46,7 +63,7 @@ function when(iso: string | null | undefined) {
   return new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
 }
 
-function boardLabel(board: BoardStatus | undefined, pending: boolean) {
+function boardLabel(board: { health: BoardStatus['health']; isLive: boolean } | undefined, pending: boolean) {
   if (pending || board?.health === 'updating') return 'Updating';
   if (!board || board.health === 'unavailable') return 'Unavailable';
   if (board.health === 'stale' || !board.isLive) return 'Stale';
@@ -158,6 +175,56 @@ export default function GoldRatesPage() {
         </table>
       </div>
       <p className="text-[11px] text-slate-500">{board?.unitLabel ?? 'INR · KJPL board quote'} · Reference rates only. Shop billing rates are unchanged.</p>
+      <MjdtaSection mjdta={status?.mjdta} pending={refresh.isPending || Boolean(status?.updating)} />
     </div>
+  );
+}
+
+function MjdtaSection({ mjdta, pending }: { mjdta: MjdtaStatus | undefined; pending: boolean }) {
+  const label = boardLabel(mjdta, pending);
+  const show = label === 'Live' || label === 'Stale' || label === 'Updating';
+  const rows = [
+    { name: 'GOLD', withoutGst: mjdta?.goldWithoutGstInr, withGst: mjdta?.goldWithGstInr },
+    { name: 'SILVER', withoutGst: mjdta?.silverWithoutGstInr, withGst: mjdta?.silverWithGstInr },
+  ];
+  return (
+    <section className="space-y-2 border-t border-amber-200 pt-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold tracking-wide text-amber-950">{mjdta?.label ?? 'MJDTA RATE'}</h2>
+        <span className="text-[11px] font-semibold uppercase text-slate-500">{label}</span>
+      </div>
+      {label === 'Stale' ? <p className="text-sm text-red-800">Showing the last valid MJDTA headline. These values are not live.</p> : null}
+      {label === 'Unavailable' ? <p className="text-sm text-red-800">MJDTA headline is unavailable.</p> : null}
+      {mjdta?.lastError && label !== 'Live' ? <p className="text-xs text-red-700">{mjdta.lastError}</p> : null}
+      <div className="min-w-0 overflow-x-auto rounded-md border border-amber-300 bg-[#fffdf8]">
+        <table className="w-full border-collapse text-xs text-slate-900 sm:text-sm">
+          <thead>
+            <tr className="bg-amber-50 text-[11px] uppercase tracking-wide text-amber-950">
+              <th className="border border-amber-200 px-2 py-2 text-left font-semibold sm:px-3">Description</th>
+              <th className="border border-amber-200 px-2 py-2 text-right font-semibold sm:px-3">Without GST</th>
+              <th className="border border-amber-200 px-2 py-2 text-right font-semibold sm:px-3">With GST</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.name} className="bg-white">
+                <th className="border border-amber-200 px-2 py-2.5 text-left text-sm font-semibold sm:px-3">{row.name}</th>
+                <td className="whitespace-nowrap border border-amber-200 px-2 py-2.5 text-right font-medium tabular-nums sm:px-3">
+                  {inr(show ? row.withoutGst : null)}
+                </td>
+                <td className="whitespace-nowrap border border-amber-200 px-2 py-2.5 text-right font-medium tabular-nums sm:px-3">
+                  {inr(show ? row.withGst : null)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-slate-500">
+        {mjdta?.withoutGstLabel ?? 'MJDTA RATE (Without GST)'} · {mjdta?.withGstLabel ?? 'MJDTA RATE (With GST)'} · {mjdta?.currency ?? 'INR'} · Source updated{' '}
+        {mjdta?.sourceUpdatedAtText ?? '—'}
+        {' · '}Not the market board and not the shop billing rate.
+      </p>
+    </section>
   );
 }
