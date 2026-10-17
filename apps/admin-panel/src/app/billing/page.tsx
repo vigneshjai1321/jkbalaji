@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { adminFetch } from '@/lib/admin-api';
+import { AdminDataTable, type AdminDataTableColumn } from '@/components/admin/AdminDataTable';
 import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
 import { AdminBtnPrimary, AdminBtnSecondary } from '@/components/admin/AdminForm';
 import { InvoicePdfLink } from '@/components/admin/InvoicePdfLink';
@@ -15,7 +16,6 @@ import {
   useBillingInputClass,
   useBillingLinkClass,
   useBillingMutedTextClass,
-  useBillingPagerBtnClass,
   useBillingSelectClass,
   useBillingStatCardClass,
 } from '@/components/billing/billing-theme';
@@ -32,6 +32,7 @@ export default function AdminBillingPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [gstFilter, setGstFilter] = useState<'' | 'gst' | 'non-gst'>('');
 
   const input = useBillingInputClass();
@@ -41,7 +42,6 @@ export default function AdminBillingPage() {
   const statCard = useBillingStatCardClass();
   const linkClass = useBillingLinkClass();
   const muted = useBillingMutedTextClass();
-  const pagerBtn = useBillingPagerBtnClass();
   const dark = useAdminTheme() === 'dark';
   const tableActionMuted = dark ? 'text-slate-300' : 'text-stone-600';
   const tableActionPrint = dark ? 'text-slate-400' : 'text-stone-500';
@@ -61,9 +61,9 @@ export default function AdminBillingPage() {
     if (gstFilter === 'gst') q.set('gstApplied', 'true');
     if (gstFilter === 'non-gst') q.set('gstApplied', 'false');
     q.set('page', String(page));
-    q.set('limit', '25');
+    q.set('limit', String(limit));
     return q.toString();
-  }, [search, status, customerId, from, to, gstFilter, page]);
+  }, [search, status, customerId, from, to, gstFilter, page, limit]);
 
   const summary = useQuery({
     queryKey: ['billing-summary'],
@@ -76,6 +76,40 @@ export default function AdminBillingPage() {
   });
 
   const loading = invoices.isLoading;
+  const invoiceTotal = invoices.data?.total ?? 0;
+  const invoiceColumns: AdminDataTableColumn<InvoiceListItem>[] = [
+    { id: 'invoiceNo', header: 'Invoice #', defaultWidth: 140, cell: (inv) => <span className="font-mono text-xs">{inv.invoiceNo}</span> },
+    { id: 'customer', header: 'Customer', defaultWidth: 180, cell: (inv) => <span title={inv.customer.name}>{inv.customer.name}</span> },
+    { id: 'date', header: 'Date', defaultWidth: 120, cell: (inv) => new Date(inv.invoiceDate).toLocaleDateString('en-IN') },
+    { id: 'gst', header: 'GST', defaultWidth: 72, cell: (inv) => (inv.gstApplied === false ? 'No' : 'Yes') },
+    { id: 'status', header: 'Status', defaultWidth: 120, cell: (inv) => inv.status.replace(/_/g, ' ') },
+    { id: 'total', header: 'Total', defaultWidth: 130, cell: (inv) => `₹${Number(inv.totalInr).toLocaleString('en-IN')}` },
+    { id: 'paid', header: 'Paid', defaultWidth: 130, cell: (inv) => `₹${Number(inv.amountPaidInr).toLocaleString('en-IN')}` },
+    {
+      id: 'actions',
+      header: 'Actions',
+      truncate: false,
+      defaultWidth: 220,
+      cell: (inv) => (
+        <span className="flex flex-wrap gap-2">
+          <Link href={`/billing/invoices/${inv.id}`} className={clsx(linkClass, 'text-xs')}>
+            View
+          </Link>
+          {(inv.status === 'DRAFT' || inv.status === 'UNPAID') && Number(inv.amountPaidInr) === 0 ? (
+            <Link href={`/billing/invoices/${inv.id}?edit=1`} className={clsx(tableActionMuted, 'text-xs hover:underline')}>
+              Edit
+            </Link>
+          ) : null}
+          {inv.status !== 'CANCELLED' && inv.status !== 'DRAFT' ? <InvoicePdfLink id={inv.id} /> : null}
+          {inv.status !== 'DRAFT' ? (
+            <Link href={`/billing/invoices/${inv.id}/preview`} className={clsx(tableActionPrint, 'text-xs hover:underline')}>
+              Print
+            </Link>
+          ) : null}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className={billingPageChromeClass()}>
@@ -219,63 +253,26 @@ export default function AdminBillingPage() {
             />
           </label>
         </div>
-        {loading ? (
-          <div className={clsx('p-8 animate-pulse text-sm', muted)}>Loading invoices…</div>
-        ) : (
-          <>
-            <AdminTable
-              headers={['Invoice #', 'Customer', 'Date', 'GST', 'Status', 'Total', 'Paid', 'Actions']}
-              rows={(invoices.data?.items ?? []).map((inv) => [
-                inv.invoiceNo,
-                inv.customer.name,
-                new Date(inv.invoiceDate).toLocaleDateString('en-IN'),
-                inv.gstApplied === false ? 'No' : 'Yes',
-                inv.status.replace(/_/g, ' '),
-                `₹${Number(inv.totalInr).toLocaleString('en-IN')}`,
-                `₹${Number(inv.amountPaidInr).toLocaleString('en-IN')}`,
-                <span key={inv.id} className="flex flex-wrap gap-2">
-                  <Link href={`/billing/invoices/${inv.id}`} className={clsx(linkClass, 'text-xs')}>
-                    View
-                  </Link>
-                  {(inv.status === 'DRAFT' || inv.status === 'UNPAID') && Number(inv.amountPaidInr) === 0 ? (
-                    <Link href={`/billing/invoices/${inv.id}?edit=1`} className={clsx(tableActionMuted, 'text-xs hover:underline')}>
-                      Edit
-                    </Link>
-                  ) : null}
-                  {inv.status !== 'CANCELLED' && inv.status !== 'DRAFT' ? <InvoicePdfLink id={inv.id} /> : null}
-                  {inv.status !== 'DRAFT' ? (
-                    <Link href={`/billing/invoices/${inv.id}/preview`} className={clsx(tableActionPrint, 'text-xs hover:underline')}>
-                      Print
-                    </Link>
-                  ) : null}
-                </span>,
-              ])}
-            />
-            <div
-              className={clsx(
-                'p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm border-t',
-                dark ? 'border-white/5' : 'border-stone-200/80',
-              )}
-            >
-              <span className={muted}>
-                Page {invoices.data?.page ?? 1} · {invoices.data?.total ?? 0} invoices
-              </span>
-              <div className="flex gap-2">
-                <button type="button" className={pagerBtn} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  className={pagerBtn}
-                  disabled={(invoices.data?.page ?? 1) * (invoices.data?.limit ?? 25) >= (invoices.data?.total ?? 0)}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+        <AdminDataTable
+          columns={invoiceColumns}
+          rows={invoices.data?.items ?? []}
+          rowKey={(inv) => inv.id}
+          isLoading={loading}
+          error={invoices.isError ? 'Could not load invoices.' : null}
+          emptyMessage="No invoices match these filters."
+          columnLayout={{ tableId: 'invoices', pinnedOrder: ['actions'], requiredVisible: ['actions', 'invoiceNo'] }}
+          pagination={{
+            page,
+            pageSize: limit,
+            total: invoiceTotal,
+            totalPages: Math.max(1, Math.ceil(invoiceTotal / limit) || 1),
+            onPageChange: setPage,
+            onPageSizeChange: (size) => {
+              setLimit(size);
+              setPage(1);
+            },
+          }}
+        />
       </AdminPanel>
     </div>
   );

@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminDataTable } from '@/components/admin/AdminDataTable';
+import { AdminPanel } from '@/components/admin/AdminPanel';
 import { AdminRowActions } from '@/components/admin/AdminRowActions';
 
 type Expense = { id: string; category: string; amountInr: string; description: string | null; expenseDate: string };
@@ -26,20 +27,22 @@ export default function ExpensesPage() {
         </Link>
       }
     >
-      {isLoading ? (
-        <div className="p-8 text-sm opacity-60">Loading…</div>
-      ) : (
-        <AdminTable
-          headers={['Date', 'Category', 'Amount', 'Description', 'Actions']}
-          rows={(data ?? []).map((e) => [
-            new Date(e.expenseDate).toLocaleDateString('en-IN'),
-            e.category,
-            `₹${Number(e.amountInr).toLocaleString('en-IN')}`,
-            e.description ?? '—',
-            <AdminRowActions key={e.id} base="/expenses" id={e.id} />,
-          ])}
+      <div className="p-4">
+        <AdminDataTable
+          columns={[
+            { id: 'date', header: 'Date', defaultWidth: 120, cell: (e: Expense) => new Date(e.expenseDate).toLocaleDateString('en-IN') },
+            { id: 'category', header: 'Category', defaultWidth: 140, cell: (e: Expense) => e.category },
+            { id: 'amount', header: 'Amount', defaultWidth: 120, cell: (e: Expense) => `₹${Number(e.amountInr).toLocaleString('en-IN')}` },
+            { id: 'description', header: 'Description', defaultWidth: 220, cell: (e: Expense) => e.description ?? '—' },
+            { id: 'actions', header: 'Actions', truncate: false, defaultWidth: 120, cell: (e: Expense) => <AdminRowActions base="/expenses" id={e.id} /> },
+          ]}
+          rows={data ?? []}
+          rowKey={(e) => e.id}
+          isLoading={isLoading}
+          emptyMessage="No expenses yet."
+          columnLayout={{ tableId: 'expenses', pinnedOrder: ['actions'], requiredVisible: ['actions'] }}
         />
-      )}
+      </div>
     </AdminPanel>
   );
 }

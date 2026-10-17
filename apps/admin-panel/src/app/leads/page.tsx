@@ -7,7 +7,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
 import { useAdminAuth } from '@/components/admin/AdminAuthContext';
 import { AdminBtnSecondary } from '@/components/admin/AdminForm';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminDataTable, type AdminDataTableColumn } from '@/components/admin/AdminDataTable';
+import { AdminPanel } from '@/components/admin/AdminPanel';
 import { applyLeadSearch } from '@/lib/lead-search';
 
 type Lead = {
@@ -48,7 +49,7 @@ export default function LeadsPage() {
   }, [searchParams]);
 
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(25);
   const [viewing, setViewing] = useState<Lead | null>(null);
 
   const { data, isLoading, isError } = useQuery({
@@ -89,6 +90,53 @@ export default function LeadsPage() {
     }
     return rows;
   }, [data, site, status, leadType, schemeOnly]);
+
+  const leadColumns = useMemo<AdminDataTableColumn<Lead>[]>(
+    () => [
+      {
+        id: 'actions',
+        header: 'Actions',
+        truncate: false,
+        defaultWidth: 96,
+        cell: (lead) => (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            aria-label={`View message from ${lead.name}`}
+            onClick={() => setViewing(lead)}
+          >
+            <Eye className="h-3.5 w-3.5" aria-hidden />
+            View
+          </button>
+        ),
+      },
+      { id: 'name', header: 'Customer Name', defaultWidth: 160, cell: (lead) => <span title={lead.name}>{lead.name}</span> },
+      { id: 'phone', header: 'Phone', defaultWidth: 130, cell: (lead) => lead.phone },
+      { id: 'email', header: 'Email', defaultWidth: 180, cell: (lead) => lead.email || '—' },
+      { id: 'enquiry', header: 'Enquiry', defaultWidth: 140, cell: (lead) => (lead.leadType ? lead.leadType.replace(/_/g, ' ') : '—') },
+      { id: 'submitted', header: 'Submitted', defaultWidth: 168, cell: (lead) => new Date(lead.createdAt).toLocaleString('en-IN') },
+      {
+        id: 'status',
+        header: 'Status',
+        truncate: false,
+        defaultWidth: 148,
+        cell: (lead) => (
+          <select
+            className="min-w-[7rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+            value={lead.status}
+            onChange={(e) => patch.mutate({ id: lead.id, status: e.target.value })}
+          >
+            {statuses.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+    ],
+    [patch],
+  );
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -166,65 +214,30 @@ export default function LeadsPage() {
           </label>
         </div>
 
-        {isLoading ? <div className="p-8 animate-pulse text-sm text-slate-500">Loading leads…</div> : null}
-        {isError ? <div className="p-4 text-sm text-red-600">Could not load leads. Check your session and API.</div> : null}
-        {!isLoading && filtered.length === 0 ? (
-          <p className="text-sm text-slate-500 py-8">No leads match your filters.</p>
-        ) : null}
-
-        {data && data.totalPages > 1 ? (
-          <p className="text-xs text-slate-500 mb-3">
-            Showing page {data.page} of {data.totalPages} ({data.total} leads)
-            <button type="button" className="ml-3 underline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              Previous
-            </button>
-            <button type="button" className="ml-2 underline" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>
-              Next
-            </button>
-          </p>
-        ) : null}
-        {!isLoading && filtered.length > 0 ? (
-          <AdminTable
-            headers={['Actions', 'Customer Name', 'Phone', 'Email', 'Enquiry', 'Submitted', 'Status']}
-            rows={filtered.map((l) => [
-              <button
-                key={`view-${l.id}`}
-                type="button"
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                aria-label={`View message from ${l.name}`}
-                onClick={() => setViewing(l)}
-              >
-                <Eye className="h-3.5 w-3.5" aria-hidden />
-                View
-              </button>,
-              <span key={`n-${l.id}`} className="block max-w-[10rem] truncate font-medium" title={l.name}>
-                {l.name}
-              </span>,
-              l.phone,
-              l.email ? (
-                <span key={`e-${l.id}`} className="block max-w-[12rem] truncate" title={l.email}>
-                  {l.email}
-                </span>
-              ) : (
-                '—'
-              ),
-              l.leadType ? l.leadType.replace(/_/g, ' ') : '—',
-              new Date(l.createdAt).toLocaleString('en-IN'),
-              <select
-                key={l.id}
-                className="min-w-[7rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-                value={l.status}
-                onChange={(e) => patch.mutate({ id: l.id, status: e.target.value })}
-              >
-                {statuses.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>,
-            ])}
-          />
-        ) : null}
+        <AdminDataTable
+          columns={leadColumns}
+          rows={filtered}
+          rowKey={(lead) => lead.id}
+          isLoading={isLoading}
+          error={isError ? 'Could not load leads. Check your session and API.' : null}
+          emptyMessage="No leads match your filters."
+          columnLayout={{ tableId: 'leads', pinnedOrder: ['actions'], requiredVisible: ['actions', 'name'] }}
+          pagination={
+            data
+              ? {
+                  page: data.page,
+                  pageSize,
+                  total: data.total,
+                  totalPages: data.totalPages,
+                  onPageChange: setPage,
+                  onPageSizeChange: (size) => {
+                    setPageSize(size);
+                    setPage(1);
+                  },
+                }
+              : undefined
+          }
+        />
         {viewing ? <LeadMessageDialog lead={viewing} onClose={() => setViewing(null)} /> : null}
       </div>
     </AdminPanel>

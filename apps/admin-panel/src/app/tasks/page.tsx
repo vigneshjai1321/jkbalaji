@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminDataTable } from '@/components/admin/AdminDataTable';
+import { AdminPanel } from '@/components/admin/AdminPanel';
 import Link from 'next/link';
 
 type Followup = {
@@ -29,21 +30,23 @@ export default function TasksPage() {
         </Link>
       }
     >
-      {isLoading ? (
-        <div className="p-8 text-sm opacity-60">Loading…</div>
-      ) : (
-        <AdminTable
-          headers={['Due', 'Lead', 'Phone', 'Status', 'Assigned', 'Notes']}
-          rows={(data ?? []).map((f) => [
-            new Date(f.dueAt).toLocaleString('en-IN'),
-            f.lead.name,
-            f.lead.phone,
-            f.lead.status,
-            f.assignedTo?.name ?? '—',
-            f.notes ?? '—',
-          ])}
+      <div className="p-4">
+        <AdminDataTable
+          columns={[
+            { id: 'due', header: 'Due', defaultWidth: 168, cell: (f: Followup) => new Date(f.dueAt).toLocaleString('en-IN') },
+            { id: 'lead', header: 'Lead', defaultWidth: 160, cell: (f: Followup) => <span title={f.lead.name}>{f.lead.name}</span> },
+            { id: 'phone', header: 'Phone', defaultWidth: 130, cell: (f: Followup) => f.lead.phone },
+            { id: 'status', header: 'Status', defaultWidth: 120, cell: (f: Followup) => f.lead.status },
+            { id: 'assigned', header: 'Assigned', defaultWidth: 140, cell: (f: Followup) => f.assignedTo?.name ?? '—' },
+            { id: 'notes', header: 'Notes', defaultWidth: 220, cell: (f: Followup) => f.notes ?? '—' },
+          ]}
+          rows={data ?? []}
+          rowKey={(f) => f.id}
+          isLoading={isLoading}
+          emptyMessage="No pending follow-ups."
+          columnLayout={{ tableId: 'tasks', requiredVisible: ['lead', 'due'] }}
         />
-      )}
+      </div>
     </AdminPanel>
   );
 }

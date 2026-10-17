@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminDataTable } from '@/components/admin/AdminDataTable';
+import { AdminPanel } from '@/components/admin/AdminPanel';
 
 type Invoice = { invoiceNo: string; totalInr: string; invoiceDate: string; customer: { name: string } };
 
@@ -31,8 +32,8 @@ export default function AdminReportsPage() {
   return (
     <div className="space-y-6">
       <AdminPanel
-        title="Reports & exports"
-        description="Revenue, expenses, and billing — export to Excel (CSV)."
+        title="Reports"
+        description="Sales, expenses, and plot summary. Broker commissions: use Commissions → Export CSV."
         actions={
           <button
             type="button"
@@ -70,19 +71,20 @@ export default function AdminReportsPage() {
             </div>
           </div>
         ) : null}
-        {sales.isLoading ? (
-          <div className="p-8 text-sm opacity-60">Loading sales report…</div>
-        ) : (
-          <AdminTable
-            headers={['Invoice', 'Customer', 'Date', 'Total']}
-            rows={(sales.data ?? []).map((i) => [
-              i.invoiceNo,
-              i.customer.name,
-              new Date(i.invoiceDate).toLocaleDateString('en-IN'),
-              `₹${Number(i.totalInr).toLocaleString('en-IN')}`,
-            ])}
-          />
-        )}
+        <AdminDataTable
+          columns={[
+            { id: 'invoiceNo', header: 'Invoice', defaultWidth: 140, cell: (i: Invoice) => i.invoiceNo },
+            { id: 'customer', header: 'Customer', defaultWidth: 180, cell: (i: Invoice) => <span title={i.customer.name}>{i.customer.name}</span> },
+            { id: 'date', header: 'Date', defaultWidth: 120, cell: (i: Invoice) => new Date(i.invoiceDate).toLocaleDateString('en-IN') },
+            { id: 'total', header: 'Total', defaultWidth: 130, cell: (i: Invoice) => `₹${Number(i.totalInr).toLocaleString('en-IN')}` },
+          ]}
+          rows={sales.data ?? []}
+          rowKey={(i) => i.invoiceNo}
+          isLoading={sales.isLoading}
+          error={sales.isError ? 'Could not load the sales report.' : null}
+          emptyMessage="No sales in this report."
+          columnLayout={{ tableId: 'sales-report', requiredVisible: ['invoiceNo'] }}
+        />
       </AdminPanel>
     </div>
   );

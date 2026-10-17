@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminDataTable } from '@/components/admin/AdminDataTable';
+import { AdminPanel } from '@/components/admin/AdminPanel';
 import { CrmKanban } from '@/components/admin/CrmKanban';
 
 type Lead = {
@@ -15,7 +16,7 @@ type Lead = {
   createdAt: string;
 };
 
-const statuses = ['NEW', 'CONTACTED', 'INTERESTED', 'NEGOTIATION', 'WON', 'LOST'];
+const statuses = ['NEW', 'CONTACTED', 'INTERESTED', 'QUALIFIED', 'NEGOTIATION', 'WON', 'LOST'];
 
 export default function AdminCrmPage() {
   const qc = useQueryClient();
@@ -34,38 +35,45 @@ export default function AdminCrmPage() {
   });
 
   return (
-    <AdminPanel title="CRM — Lead Pipeline" description="Kanban pipeline with PostgreSQL-backed leads from jkbalaji.in & cheyyarbalaji.com.">
+    <AdminPanel title="CRM" description="Lead pipeline and status updates.">
       {isLoading ? (
         <div className="p-8 animate-pulse text-sm text-slate-500">Loading leads…</div>
       ) : (
         <CrmKanban leads={data ?? []} />
       )}
       <h3 className="mt-10 mb-4 text-sm font-bold uppercase tracking-widest text-emerald-500">All leads</h3>
-      {isLoading ? (
-        <div className="p-8 animate-pulse text-sm text-slate-500">Loading leads…</div>
-      ) : (
-        <AdminTable
-          headers={['Name', 'Phone', 'Site', 'Status', 'Created']}
-          rows={(data ?? []).map((l) => [
-            l.name,
-            l.phone,
-            l.site,
-            <select
-              key={l.id}
-              className="rounded-lg bg-slate-900 text-slate-100 border border-white/10 text-xs px-2 py-1"
-              value={l.status}
-              onChange={(e) => patch.mutate({ id: l.id, status: e.target.value })}
-            >
-              {statuses.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>,
-            new Date(l.createdAt).toLocaleDateString('en-IN'),
-          ])}
-        />
-      )}
+      <AdminDataTable
+        columns={[
+          { id: 'name', header: 'Name', defaultWidth: 160, cell: (l: Lead) => <span title={l.name}>{l.name}</span> },
+          { id: 'phone', header: 'Phone', defaultWidth: 130, cell: (l: Lead) => l.phone },
+          { id: 'site', header: 'Site', defaultWidth: 120, cell: (l: Lead) => l.site },
+          {
+            id: 'status',
+            header: 'Status',
+            truncate: false,
+            defaultWidth: 160,
+            cell: (l: Lead) => (
+              <select
+                className="rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+                value={l.status}
+                onChange={(e) => patch.mutate({ id: l.id, status: e.target.value })}
+              >
+                {statuses.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            ),
+          },
+          { id: 'created', header: 'Created', defaultWidth: 120, cell: (l: Lead) => new Date(l.createdAt).toLocaleDateString('en-IN') },
+        ]}
+        rows={Array.isArray(data) ? data : []}
+        rowKey={(l) => l.id}
+        isLoading={isLoading}
+        emptyMessage="No leads."
+        columnLayout={{ tableId: 'crm-leads', requiredVisible: ['name', 'status'] }}
+      />
     </AdminPanel>
   );
 }

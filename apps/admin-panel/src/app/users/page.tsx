@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminDataTable } from '@/components/admin/AdminDataTable';
+import { AdminPanel } from '@/components/admin/AdminPanel';
 
 type UserRow = {
   id: string;
@@ -72,28 +73,37 @@ export default function AdminUsersPage() {
             Create user
           </button>
         </div>
-        {isLoading ? (
-          <div className="p-8 text-sm text-slate-500">Loading users…</div>
-        ) : (
-          <AdminTable
-            headers={['Name', 'Email', 'Role', 'Department', 'Last login', 'Status']}
-            rows={(data ?? []).map((u) => [
-              u.name,
-              u.email,
-              u.role.replaceAll('_', ' '),
-              u.department ?? '—',
-              u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('en-IN') : '—',
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => toggleActive.mutate({ id: u.id, isActive: !u.isActive })}
-                className={`text-xs font-semibold px-2 py-1 rounded-full ${u.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}
-              >
-                {u.isActive ? 'Active' : 'Disabled'}
-              </button>,
-            ])}
+        <div className="p-4">
+          <AdminDataTable
+            columns={[
+              { id: 'name', header: 'Name', defaultWidth: 160, cell: (u: UserRow) => u.name },
+              { id: 'email', header: 'Email', defaultWidth: 200, cell: (u: UserRow) => u.email },
+              { id: 'role', header: 'Role', defaultWidth: 160, cell: (u: UserRow) => u.role.replaceAll('_', ' ') },
+              { id: 'department', header: 'Department', defaultWidth: 140, cell: (u: UserRow) => u.department ?? '—' },
+              { id: 'lastLogin', header: 'Last login', defaultWidth: 168, cell: (u: UserRow) => (u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('en-IN') : '—') },
+              {
+                id: 'status',
+                header: 'Status',
+                truncate: false,
+                defaultWidth: 110,
+                cell: (u: UserRow) => (
+                  <button
+                    type="button"
+                    onClick={() => toggleActive.mutate({ id: u.id, isActive: !u.isActive })}
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${u.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}
+                  >
+                    {u.isActive ? 'Active' : 'Disabled'}
+                  </button>
+                ),
+              },
+            ]}
+            rows={data ?? []}
+            rowKey={(u) => u.id}
+            isLoading={isLoading}
+            emptyMessage="No users."
+            columnLayout={{ tableId: 'users', requiredVisible: ['name', 'email', 'status'] }}
           />
-        )}
+        </div>
       </AdminPanel>
     </div>
   );

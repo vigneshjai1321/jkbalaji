@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminDataTable } from '@/components/admin/AdminDataTable';
+import { AdminPanel } from '@/components/admin/AdminPanel';
 import { AdminBtnPrimary, useAdminInputClass } from '@/components/admin/AdminForm';
 
 type Stock = { sku: string; name: string; quantity: string; unit: string };
@@ -61,14 +62,21 @@ export default function InventoryPage() {
           Post
         </AdminBtnPrimary>
       </form>
-      {isLoading ? (
-        <div className="p-8 text-sm opacity-60">Loading stock…</div>
-      ) : (
-        <AdminTable
-          headers={['SKU', 'Name', 'Qty', 'Unit']}
-          rows={(data ?? []).map((s) => [s.sku, s.name, String(s.quantity), s.unit])}
+      <div className="px-4 pb-4">
+        <AdminDataTable
+          columns={[
+            { id: 'sku', header: 'SKU', defaultWidth: 140, cell: (s: Stock) => s.sku },
+            { id: 'name', header: 'Name', defaultWidth: 200, cell: (s: Stock) => <span title={s.name}>{s.name}</span> },
+            { id: 'qty', header: 'Qty', defaultWidth: 90, cell: (s: Stock) => String(s.quantity) },
+            { id: 'unit', header: 'Unit', defaultWidth: 90, cell: (s: Stock) => s.unit },
+          ]}
+          rows={data ?? []}
+          rowKey={(s) => s.sku}
+          isLoading={isLoading}
+          emptyMessage="No stock records."
+          columnLayout={{ tableId: 'inventory', requiredVisible: ['sku', 'name'] }}
         />
-      )}
+      </div>
     </AdminPanel>
   );
 }

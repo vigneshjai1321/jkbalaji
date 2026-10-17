@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { adminFetch } from '@/lib/admin-api';
-import { AdminPanel, AdminTable } from '@/components/admin/AdminPanel';
+import { AdminPanel } from '@/components/admin/AdminPanel';
+import { PlotsDataTable } from '@/components/admin/PlotsDataTable';
 import { clsx } from 'clsx';
 import { formatInr, formatSqft } from '@/lib/plot-currency';
 
@@ -51,42 +52,6 @@ type ProjectOption = { id: string; name: string; slug: string; phase: string };
 
 const PAGE_SIZE = 20;
 const STATUSES = ['AVAILABLE', 'RESERVED', 'SOLD', 'BLOCKED'] as const;
-
-function formatArea(value: string | null) {
-  return formatSqft(value);
-}
-
-function priceCell(row: PlotRow) {
-  if (row.pricePerSqftInr) return `${formatInr(row.pricePerSqftInr)}/sq ft`;
-  if (row.priceInr) return formatInr(row.priceInr);
-  return 'Price not configured';
-}
-
-function basePriceCell(row: PlotRow) {
-  if (row.priceInr) return formatInr(row.priceInr);
-  if (row.pricePerSqftInr && row.areaSqft) {
-    const base = Math.round(Number(row.areaSqft) * Number(row.pricePerSqftInr) * 100) / 100;
-    return formatInr(base);
-  }
-  return '—';
-}
-
-function dimensions(row: PlotRow) {
-  if (row.lengthFt && row.widthFt) return `${Number(row.lengthFt)} × ${Number(row.widthFt)} ft`;
-  return '—';
-}
-
-function statusBadge(status: string) {
-  const tone =
-    status === 'AVAILABLE'
-      ? 'bg-emerald-100 text-emerald-800'
-      : status === 'RESERVED'
-        ? 'bg-amber-100 text-amber-900'
-        : status === 'SOLD'
-          ? 'bg-slate-200 text-slate-800'
-          : 'bg-red-100 text-red-800';
-  return <span className={clsx('rounded-md px-2 py-0.5 text-xs font-semibold', tone)}>{status}</span>;
-}
 
 function plotQueryString(params: Record<string, string | undefined>) {
   const q = new URLSearchParams();
@@ -432,55 +397,13 @@ export function PlotWorkspace({
         <div className="p-8 text-sm opacity-70">No plots match your filters. Add a plot to start inventory for this phase.</div>
       ) : (
         <>
-          <AdminTable
-            headers={[
-              <button key="pn" type="button" className="font-semibold hover:underline" onClick={() => toggleSort('plotNumber')}>
-                Plot #
-              </button>,
-              'Project',
-              <button key="ar" type="button" className="font-semibold hover:underline" onClick={() => toggleSort('areaSqft')}>
-                Area (sq ft)
-              </button>,
-              'Dimensions',
-              <button key="pr" type="button" className="font-semibold hover:underline" onClick={() => toggleSort('pricePerSqftInr')}>
-                ₹ / sq ft
-              </button>,
-              'Base price',
-              <button key="st" type="button" className="font-semibold hover:underline" onClick={() => toggleSort('status')}>
-                Status
-              </button>,
-              'Customer / broker',
-              'Actions',
-            ]}
-            rows={pageRows.map((p) => [
-              p.plotNumber,
-              p.project?.name ?? '—',
-              formatArea(p.areaSqft),
-              dimensions(p),
-              priceCell(p),
-              basePriceCell(p),
-              statusBadge(p.status),
-              <span key={`${p.id}-cb`} className="text-xs">
-                {p.customer?.name ?? '—'}
-                {p.broker ? <span className="block text-slate-500">Broker: {p.broker.name}</span> : null}
-              </span>,
-              <span key={p.id} className="inline-flex flex-wrap gap-2 text-xs">
-                <Link href={`/plots/${p.id}`} className="text-emerald-500 hover:underline">
-                  View
-                </Link>
-                <Link href={`/plots/${p.id}/edit`} className="text-sky-400 hover:underline">
-                  Edit
-                </Link>
-                {fixedProjectId && p.status === 'AVAILABLE' ? (
-                  <Link href={`/projects/${fixedProjectId}/quotation/new?plotId=${p.id}`} className="text-blue-500 hover:underline">
-                    Quote
-                  </Link>
-                ) : null}
-                <button type="button" className="text-red-400 hover:underline" onClick={() => setPendingDelete(p)}>
-                  Delete
-                </button>
-              </span>,
-            ])}
+          <PlotsDataTable
+            rows={pageRows}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onToggleSort={toggleSort}
+            onDelete={(row) => setPendingDelete(row)}
+            fixedProjectId={fixedProjectId}
           />
           <div className="flex items-center justify-between gap-2 px-4 py-3 text-sm">
             <p className="opacity-70">
